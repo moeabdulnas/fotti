@@ -5,9 +5,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Edit2, Check, X } from 'lucide-react';
 import { useMatch } from '@/hooks/useMatch';
+import { useLanguage } from '@/hooks/LanguageContext';
 
 export function TeamEditor() {
   const { currentMatch, updateHomeTeam, updateAwayTeam } = useMatch();
+  const { t } = useLanguage();
   const [editingHome, setEditingHome] = useState(false);
   const [editingAway, setEditingAway] = useState(false);
   const [homeName, setHomeName] = useState('');
@@ -42,12 +44,12 @@ export function TeamEditor() {
   return (
     <Card className="mb-4">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg">Match Teams</CardTitle>
+        <CardTitle className="text-lg">{t('matchTeams')}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex gap-6">
           <div className="flex-1">
-            <Label className="text-muted-foreground">Home Team</Label>
+            <Label className="text-muted-foreground">{t('homeTeam')}</Label>
             <div className="flex items-center gap-2 mt-1">
               {editingHome ? (
                 <>
@@ -75,9 +77,9 @@ export function TeamEditor() {
               )}
             </div>
           </div>
-          <div className="flex items-center text-muted-foreground font-semibold">vs</div>
+          <div className="flex items-center text-muted-foreground font-semibold">{t('vs')}</div>
           <div className="flex-1">
-            <Label className="text-muted-foreground">Away Team</Label>
+            <Label className="text-muted-foreground">{t('awayTeam')}</Label>
             <div className="flex items-center gap-2 mt-1">
               {editingAway ? (
                 <>

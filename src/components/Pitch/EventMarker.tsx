@@ -11,7 +11,6 @@ const SHOT_OUTCOME_COLORS: Record<ShotEvent['outcome'], string> = {
   on_target: '#3b82f6',
   off_target: '#f59e0b',
   blocked: '#ef4444',
-  missed: '#6b7280',
 };
 
 export function EventMarker({ event, width, height }: EventMarkerProps) {

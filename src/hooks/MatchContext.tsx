@@ -26,6 +26,8 @@ interface MatchContextType {
   clearMatch: () => void;
   loadMatch: (id: string) => void;
   getMatches: () => Match[];
+  importMatch: (data: unknown) => { success: boolean; error?: string };
+  exportMatch: () => string | null;
 }
 
 const MatchContext = createContext<MatchContextType | null>(null);
@@ -180,6 +182,56 @@ export function MatchProvider({ children }: { children: ReactNode }) {
     return loadData().matches;
   }, []);
 
+  const importMatch = useCallback((data: unknown): { success: boolean; error?: string } => {
+    if (!data || typeof data !== 'object') {
+      return { success: false, error: 'Invalid data format' };
+    }
+
+    const match = data as Record<string, unknown>;
+
+    if (!match.id || typeof match.id !== 'string') {
+      return { success: false, error: 'Missing or invalid id' };
+    }
+    if (!match.date || typeof match.date !== 'string') {
+      return { success: false, error: 'Missing or invalid date' };
+    }
+    const homeTeam = match.homeTeam as Record<string, unknown> | undefined;
+    const awayTeam = match.awayTeam as Record<string, unknown> | undefined;
+    if (!homeTeam || typeof homeTeam !== 'object' || !homeTeam.id || !homeTeam.name) {
+      return { success: false, error: 'Missing or invalid homeTeam' };
+    }
+    if (!awayTeam || typeof awayTeam !== 'object' || !awayTeam.id || !awayTeam.name) {
+      return { success: false, error: 'Missing or invalid awayTeam' };
+    }
+    if (!Array.isArray(match.events)) {
+      return { success: false, error: 'Missing or invalid events' };
+    }
+
+    for (const event of match.events) {
+      if (!event || typeof event !== 'object') {
+        return { success: false, error: 'Invalid event format' };
+      }
+      const e = event as Record<string, unknown>;
+      if (!e.id || !e.type || !e.position || !e.zone || !e.minute || !e.timestamp) {
+        return { success: false, error: 'Invalid event properties' };
+      }
+      if (!['shot', 'conceded', 'ball_loss', 'recovery'].includes(e.type as string)) {
+        return { success: false, error: 'Invalid event type' };
+      }
+      if ((e.type === 'shot' || e.type === 'conceded') && !e.outcome) {
+        return { success: false, error: 'Missing outcome for shot event' };
+      }
+    }
+
+    setCurrentMatch(match as unknown as Match);
+    return { success: true };
+  }, []);
+
+  const exportMatch = useCallback((): string | null => {
+    if (!currentMatch) return null;
+    return JSON.stringify(currentMatch, null, 2);
+  }, [currentMatch]);
+
   return (
     <MatchContext.Provider
       value={{
@@ -196,6 +248,8 @@ export function MatchProvider({ children }: { children: ReactNode }) {
         clearMatch,
         loadMatch,
         getMatches,
+        importMatch,
+        exportMatch,
       }}
     >
       {children}

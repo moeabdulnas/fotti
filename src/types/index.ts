@@ -35,7 +35,7 @@ export interface Zone {
 
 export type EventType = 'shot' | 'conceded' | 'ball_loss' | 'recovery';
 
-export type ShotOutcome = 'on_target' | 'off_target' | 'blocked' | 'missed' | 'goal';
+export type ShotOutcome = 'on_target' | 'off_target' | 'blocked' | 'goal';
 
 export interface Position {
   x: number;

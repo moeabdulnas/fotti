@@ -1,19 +1,25 @@
 import type { ShotOutcome } from '../types';
+import { useLanguage } from '@/hooks/LanguageContext';
 
 interface OutcomeSelectorProps {
   onSelect: (outcome: ShotOutcome) => void;
   onCancel: () => void;
 }
 
-const OUTCOMES: { value: ShotOutcome; label: string; color: string }[] = [
-  { value: 'goal', label: 'Goal', color: '#22c55e' },
-  { value: 'on_target', label: 'On Target', color: '#3b82f6' },
-  { value: 'off_target', label: 'Off Target', color: '#f59e0b' },
-  { value: 'blocked', label: 'Blocked', color: '#ef4444' },
-  { value: 'missed', label: 'Missed', color: '#6b7280' },
+const OUTCOMES: {
+  value: ShotOutcome;
+  labelKey: 'goal' | 'onTarget' | 'offTarget' | 'blocked';
+  color: string;
+}[] = [
+  { value: 'goal', labelKey: 'goal', color: '#22c55e' },
+  { value: 'on_target', labelKey: 'onTarget', color: '#3b82f6' },
+  { value: 'off_target', labelKey: 'offTarget', color: '#f59e0b' },
+  { value: 'blocked', labelKey: 'blocked', color: '#ef4444' },
 ];
 
 export function OutcomeSelector({ onSelect, onCancel }: OutcomeSelectorProps) {
+  const { t } = useLanguage();
+
   return (
     <div
       style={{
@@ -44,7 +50,7 @@ export function OutcomeSelector({ onSelect, onCancel }: OutcomeSelectorProps) {
             fontWeight: 'bold',
           }}
         >
-          {outcome.label}
+          {t(outcome.labelKey)}
         </button>
       ))}
       <button
@@ -58,7 +64,7 @@ export function OutcomeSelector({ onSelect, onCancel }: OutcomeSelectorProps) {
           cursor: 'pointer',
         }}
       >
-        Cancel
+        {t('cancel')}
       </button>
     </div>
   );

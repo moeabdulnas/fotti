@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import {
   BarChart,
   Bar,
@@ -12,16 +12,28 @@ import {
   Cell,
 } from 'recharts';
 import { Download } from 'lucide-react';
+import html2canvas from 'html2canvas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMatch } from '@/hooks/useMatch';
+import { useLanguage } from '@/hooks/LanguageContext';
 import { calculateStats } from '@/utils/stats';
 
-const COLORS = ['#26d947', '#1fad39', '#17822b', '#659a69', '#4eb649', '#3f923a'];
+const OUTCOME_COLORS: Record<string, string> = {
+  Goal: '#22c55e',
+  'On Target': '#3b82f6',
+  'Off Target': '#f59e0b',
+  Blocked: '#ef4444',
+};
+
+const SHOT_FOR_COLOR = '#26d947';
+const SHOT_AGAINST_COLOR = '#b847a3';
 
 export function ChartsPanel() {
   const { currentMatch } = useMatch();
+  const { t } = useLanguage();
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const stats = useMemo(() => {
     if (!currentMatch) return null;
@@ -57,7 +69,6 @@ export function ChartsPanel() {
       'On Target': 0,
       'Off Target': 0,
       Blocked: 0,
-      Missed: 0,
       Goal: 0,
     };
     shots.forEach((s) => {
@@ -71,9 +82,6 @@ export function ChartsPanel() {
           break;
         case 'blocked':
           outcomeMap['Blocked']++;
-          break;
-        case 'missed':
-          outcomeMap['Missed']++;
           break;
         case 'goal':
           outcomeMap['Goal']++;
@@ -92,7 +100,6 @@ export function ChartsPanel() {
       'On Target': 0,
       'Off Target': 0,
       Blocked: 0,
-      Missed: 0,
       Goal: 0,
     };
     conceded.forEach((s) => {
@@ -106,9 +113,6 @@ export function ChartsPanel() {
           break;
         case 'blocked':
           outcomeMap['Blocked']++;
-          break;
-        case 'missed':
-          outcomeMap['Missed']++;
           break;
         case 'goal':
           outcomeMap['Goal']++;
@@ -158,6 +162,26 @@ export function ChartsPanel() {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportChartPng = async () => {
+    if (!chartRef.current) return;
+
+    try {
+      const element = chartRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      const link = document.createElement('a');
+      link.download = `${currentMatch?.homeTeam.name}-vs-${currentMatch?.awayTeam.name}-chart.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (error) {
+      console.error('Failed to export chart:', error);
+    }
+  };
+
   if (!currentMatch || !stats) return null;
 
   const hasShots = stats.totalShots > 0;
@@ -167,36 +191,42 @@ export function ChartsPanel() {
     <Card className="mt-4">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle>Shot Analysis</CardTitle>
-          <Button variant="outline" size="sm" onClick={handleExportCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
+          <CardTitle>{t('shotAnalysis')}</CardTitle>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportCSV}>
+              <Download className="h-4 w-4 mr-2" />
+              {t('exportCsv')}
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportChartPng}>
+              <Download className="h-4 w-4 mr-2" />
+              {t('exportChartPng')}
+            </Button>
+          </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent ref={chartRef}>
         <Tabs defaultValue="shots" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="shots">Shots For</TabsTrigger>
-            <TabsTrigger value="conceded">Shots Against</TabsTrigger>
-            <TabsTrigger value="outcomes">Shot Outcomes</TabsTrigger>
-            <TabsTrigger value="zone-dist">Zone Dist.</TabsTrigger>
+            <TabsTrigger value="shots">{t('shotsFor')}</TabsTrigger>
+            <TabsTrigger value="conceded">{t('shotsAgainstTab')}</TabsTrigger>
+            <TabsTrigger value="outcomes">{t('shotOutcomes')}</TabsTrigger>
+            <TabsTrigger value="zone-dist">{t('zoneDist')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="shots" className="mt-4">
             {hasShots ? (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={shotZoneData}>
+                <BarChart data={shotZoneData} margin={{ left: 20, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="shots" fill="#26d947" name="Shots" />
+                  <Bar dataKey="shots" fill={SHOT_FOR_COLOR} name={t('shotsFor')} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                No shots recorded yet
+                {t('noShotsRecorded')}
               </div>
             )}
           </TabsContent>
@@ -204,17 +234,17 @@ export function ChartsPanel() {
           <TabsContent value="conceded" className="mt-4">
             {hasConceded ? (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={concededZoneData}>
+                <BarChart data={concededZoneData} margin={{ left: 20, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="conceded" fill="#b847a3" name="Shots Conceded" />
+                  <Bar dataKey="conceded" fill={SHOT_AGAINST_COLOR} name={t('shotsAgainstTab')} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                No shots conceded recorded yet
+                {t('noShotsConceded')}
               </div>
             )}
           </TabsContent>
@@ -222,7 +252,7 @@ export function ChartsPanel() {
           <TabsContent value="outcomes" className="mt-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <h4 className="text-sm font-medium mb-2 text-center">Shots For</h4>
+                <h4 className="text-sm font-medium mb-2 text-center">{t('shotsFor')}</h4>
                 {shotOutcomeData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={200}>
                     <PieChart>
@@ -230,13 +260,18 @@ export function ChartsPanel() {
                         data={shotOutcomeData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={40}
-                        outerRadius={80}
+                        innerRadius={50}
+                        outerRadius={75}
                         dataKey="value"
-                        label={({ name, value }) => `${name}: ${value}`}
+                        label={({ name, percent = 0 }) =>
+                          `${name} (${(percent * 100).toFixed(0)}%)`
+                        }
                       >
-                        {shotOutcomeData.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        {shotOutcomeData.map((entry) => (
+                          <Cell
+                            key={`cell-${entry.name}`}
+                            fill={OUTCOME_COLORS[entry.name] || '#6b7280'}
+                          />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -244,12 +279,12 @@ export function ChartsPanel() {
                   </ResponsiveContainer>
                 ) : (
                   <div className="h-[200px] flex items-center justify-center text-muted-foreground">
-                    No shots
+                    {t('noShots')}
                   </div>
                 )}
               </div>
               <div>
-                <h4 className="text-sm font-medium mb-2 text-center">Shots Against</h4>
+                <h4 className="text-sm font-medium mb-2 text-center">{t('shotsAgainstTab')}</h4>
                 {concededOutcomeData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={200}>
                     <PieChart>
@@ -257,13 +292,18 @@ export function ChartsPanel() {
                         data={concededOutcomeData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={40}
-                        outerRadius={80}
+                        innerRadius={50}
+                        outerRadius={75}
                         dataKey="value"
-                        label={({ name, value }) => `${name}: ${value}`}
+                        label={({ name, percent = 0 }) =>
+                          `${name} (${(percent * 100).toFixed(0)}%)`
+                        }
                       >
-                        {concededOutcomeData.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        {concededOutcomeData.map((entry) => (
+                          <Cell
+                            key={`cell-${entry.name}`}
+                            fill={OUTCOME_COLORS[entry.name] || '#6b7280'}
+                          />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -271,7 +311,7 @@ export function ChartsPanel() {
                   </ResponsiveContainer>
                 ) : (
                   <div className="h-[200px] flex items-center justify-center text-muted-foreground">
-                    No shots against
+                    {t('noShotsAgainst')}
                   </div>
                 )}
               </div>
@@ -280,13 +320,13 @@ export function ChartsPanel() {
 
           <TabsContent value="zone-dist" className="mt-4">
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={stats.zoneStats} layout="vertical">
+              <BarChart data={stats.zoneStats} layout="vertical" margin={{ left: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
-                <YAxis dataKey="zoneId" type="category" width={60} tick={{ fontSize: 11 }} />
+                <YAxis dataKey="zoneId" type="category" width={70} tick={{ fontSize: 12 }} />
                 <Tooltip />
-                <Bar dataKey="shots" fill="#26d947" name="Shots For" />
-                <Bar dataKey="conceded" fill="#b847a3" name="Shots Against" />
+                <Bar dataKey="shots" fill={SHOT_FOR_COLOR} name={t('shotsFor')} />
+                <Bar dataKey="conceded" fill={SHOT_AGAINST_COLOR} name={t('shotsAgainstTab')} />
               </BarChart>
             </ResponsiveContainer>
           </TabsContent>

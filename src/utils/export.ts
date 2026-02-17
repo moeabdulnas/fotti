@@ -8,8 +8,10 @@ export async function exportToPng(
 
   const { width, height } = svgElement.getBoundingClientRect();
   const scale = 2;
+  const paddingY = height * 0.15;
+
   canvas.width = width * scale;
-  canvas.height = height * scale;
+  canvas.height = (height + paddingY * 2) * scale;
 
   const svgData = new XMLSerializer().serializeToString(svgElement);
   const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
@@ -19,8 +21,8 @@ export async function exportToPng(
   img.onload = () => {
     ctx.scale(scale, scale);
     ctx.fillStyle = '#4a7c59';
-    ctx.fillRect(0, 0, width, height);
-    ctx.drawImage(img, 0, 0, width, height);
+    ctx.fillRect(0, 0, width, height + paddingY * 2);
+    ctx.drawImage(img, 0, paddingY, width, height);
     URL.revokeObjectURL(url);
 
     const pngUrl = canvas.toDataURL('image/png');
