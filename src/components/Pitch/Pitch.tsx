@@ -23,11 +23,17 @@ export const Pitch = forwardRef<SVGSVGElement, PitchProps>(function Pitch(
 
   const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!onClick) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = ((e.clientX - rect.left - offsetX) / pitchWidth) * 100;
-    const clickY = ((e.clientY - rect.top - offsetY) / pitchHeight) * 70;
-    console.log('Click:', { clickX: clickX.toFixed(1), clickY: clickY.toFixed(1) });
-    if (clickX >= 0 && clickX <= 100 && clickY >= 0 && clickY <= 70) {
+    const svg = e.currentTarget;
+    // Use SVG API to convert screen coords to viewBox coords (handles letterboxing / preserveAspectRatio)
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const screenCTM = svg.getScreenCTM();
+    if (!screenCTM) return;
+    const { x: viewBoxX, y: viewBoxY } = pt.matrixTransform(screenCTM.inverse());
+    const clickX = ((viewBoxX - offsetX) / pitchWidth) * 100;
+    const clickY = ((viewBoxY - offsetY) / pitchHeight) * 100;
+    if (clickX >= 0 && clickX <= 100 && clickY >= 0 && clickY <= 100) {
       onClick(clickX, clickY);
     }
   };
