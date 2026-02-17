@@ -15,6 +15,8 @@ import { loadData, saveData } from '../utils/storage';
 interface MatchContextType {
   currentMatch: Match | null;
   createNewMatch: (homeTeam: Team, awayTeam: Team) => void;
+  updateHomeTeam: (name: string) => void;
+  updateAwayTeam: (name: string) => void;
   addShot: (x: number, y: number, outcome: ShotOutcome) => void;
   addConceded: (x: number, y: number, outcome: ShotOutcome) => void;
   addBallLoss: (x: number, y: number) => void;
@@ -68,6 +70,20 @@ export function MatchProvider({ children }: { children: ReactNode }) {
 
   const createNewMatch = useCallback((homeTeam: Team, awayTeam: Team) => {
     setCurrentMatch(createEmptyMatch(homeTeam, awayTeam));
+  }, []);
+
+  const updateHomeTeam = useCallback((name: string) => {
+    setCurrentMatch((prev) => {
+      if (!prev) return prev;
+      return { ...prev, homeTeam: { ...prev.homeTeam, name } };
+    });
+  }, []);
+
+  const updateAwayTeam = useCallback((name: string) => {
+    setCurrentMatch((prev) => {
+      if (!prev) return prev;
+      return { ...prev, awayTeam: { ...prev.awayTeam, name } };
+    });
   }, []);
 
   const addShot = useCallback((x: number, y: number, outcome: ShotOutcome) => {
@@ -169,6 +185,8 @@ export function MatchProvider({ children }: { children: ReactNode }) {
       value={{
         currentMatch,
         createNewMatch,
+        updateHomeTeam,
+        updateAwayTeam,
         addShot,
         addConceded,
         addBallLoss,

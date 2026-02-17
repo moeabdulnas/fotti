@@ -5,12 +5,13 @@ interface PitchProps {
   width?: number;
   height?: number;
   showZones?: boolean;
+  showZoneNumbers?: boolean;
   onClick?: (x: number, y: number) => void;
   children?: React.ReactNode;
 }
 
 export const Pitch = forwardRef<SVGSVGElement, PitchProps>(function Pitch(
-  { width = 800, height = 520, showZones = false, onClick, children },
+  { width = 800, height = 520, showZones = false, showZoneNumbers = false, onClick, children },
   ref
 ) {
   const patternId = useId();
@@ -78,6 +79,22 @@ export const Pitch = forwardRef<SVGSVGElement, PitchProps>(function Pitch(
               strokeDasharray="4"
               style={{ pointerEvents: 'none' }}
             />
+          ))}
+
+        {showZoneNumbers &&
+          ZONES.map((zone) => (
+            <text
+              key={`num-${zone.id}`}
+              x={((zone.x + zone.width / 2) / 100) * pitchWidth}
+              y={((zone.y + zone.height / 2) / 100) * pitchHeight}
+              fill="rgba(255, 255, 255, 0.5)"
+              fontSize={Math.min(pitchWidth, pitchHeight) / 20}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              style={{ pointerEvents: 'none' }}
+            >
+              {zone.id}
+            </text>
           ))}
 
         <line

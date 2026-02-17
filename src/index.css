@@ -1,1 +1,118 @@
 @import 'tailwindcss';
+
+@theme {
+  --color-evergreen-50: #e9fbed;
+  --color-evergreen-100: #d4f7da;
+  --color-evergreen-200: #a8f0b5;
+  --color-evergreen-300: #7de891;
+  --color-evergreen-400: #52e06c;
+  --color-evergreen-500: #26d947;
+  --color-evergreen-600: #1fad39;
+  --color-evergreen-700: #17822b;
+  --color-evergreen-800: #0f571c;
+  --color-evergreen-900: #082b0e;
+  --color-evergreen-950: #051e0a;
+
+  --color-midnight-violet-50: #f8edf6;
+  --color-midnight-violet-100: #f1daed;
+  --color-midnight-violet-200: #e2b6da;
+  --color-midnight-violet-300: #d491c8;
+  --color-midnight-violet-400: #c66cb5;
+  --color-midnight-violet-500: #b847a3;
+  --color-midnight-violet-600: #933982;
+  --color-midnight-violet-700: #6e2b62;
+  --color-midnight-violet-800: #491d41;
+  --color-midnight-violet-900: #250e21;
+  --color-midnight-violet-950: #1a0a17;
+
+  --color-willow-green-50: #edf8ed;
+  --color-willow-green-100: #dcf0db;
+  --color-willow-green-200: #b8e2b6;
+  --color-willow-green-300: #95d392;
+  --color-willow-green-400: #72c56d;
+  --color-willow-green-500: #4eb649;
+  --color-willow-green-600: #3f923a;
+  --color-willow-green-700: #2f6d2c;
+  --color-willow-green-800: #1f491d;
+  --color-willow-green-900: #10240f;
+  --color-willow-green-950: #0b1a0a;
+
+  --color-sage-green-50: #f0f5f0;
+  --color-sage-green-100: #e0ebe1;
+  --color-sage-green-200: #c1d7c3;
+  --color-sage-green-300: #a2c3a5;
+  --color-sage-green-400: #84ae87;
+  --color-sage-green-500: #659a69;
+  --color-sage-green-600: #517b54;
+  --color-sage-green-700: #3c5d3f;
+  --color-sage-green-800: #283e2a;
+  --color-sage-green-900: #141f15;
+  --color-sage-green-950: #0e160f;
+
+  --color-deep-twilight-50: #ebe9fb;
+  --color-deep-twilight-100: #d7d3f8;
+  --color-deep-twilight-200: #afa7f1;
+  --color-deep-twilight-300: #867bea;
+  --color-deep-twilight-400: #5e50e2;
+  --color-deep-twilight-500: #3624db;
+  --color-deep-twilight-600: #2b1daf;
+  --color-deep-twilight-700: #201584;
+  --color-deep-twilight-800: #160e58;
+  --color-deep-twilight-900: #0b072c;
+  --color-deep-twilight-950: #08051f;
+
+  --color-primary: #26d947;
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: #659a69;
+  --color-secondary-foreground: #ffffff;
+
+  --color-accent: #b847a3;
+  --color-accent-foreground: #ffffff;
+
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+
+  --color-muted: #f0f5f0;
+  --color-muted-foreground: #3c5d3f;
+
+  --color-card: #ffffff;
+  --color-card-foreground: #0f571c;
+
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f571c;
+
+  --color-border: #c1d7c3;
+  --color-input: #c1d7c3;
+  --color-ring: #26d947;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f571c;
+}
+
+.dark {
+  --background: #0e160f;
+  --foreground: #edf8ed;
+  --color-muted: #1f491d;
+  --color-muted-foreground: #95d392;
+  --color-card: #1f491d;
+  --color-card-foreground: #edf8ed;
+  --color-popover: #1f491d;
+  --color-popover-foreground: #edf8ed;
+  --color-border: #3c5d3f;
+  --color-input: #3c5d3f;
+  --color-primary: #4eb649;
+  --color-secondary: #659a69;
+  --color-accent: #d491c8;
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}

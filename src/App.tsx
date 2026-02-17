@@ -6,9 +6,18 @@ import { EventModeSelector, type EventMode } from './components/EventModeSelecto
 import { StatsTable } from './components/StatsTable';
 import { MatchProvider } from './hooks/MatchContext';
 import { useMatch } from './hooks/useMatch';
+import { ThemeProvider } from './hooks/ThemeContext';
 import { calculateStats } from './utils/stats';
 import { exportToPng } from './utils/export';
 import type { ShotOutcome, MatchEvent } from './types';
+import { Button } from './components/ui/button';
+import { Card, CardContent, CardHeader } from './components/ui/card';
+import { Switch } from './components/ui/switch';
+import { Label } from './components/ui/label';
+import { ThemeToggle } from './components/ThemeToggle';
+import { TeamEditor } from './components/TeamEditor';
+import { ChartsPanel } from './components/ChartsPanel';
+import { Plus } from 'lucide-react';
 
 function MatchEditor() {
   const {
@@ -26,6 +35,7 @@ function MatchEditor() {
   const [pendingPosition, setPendingPosition] = useState<{ x: number; y: number } | null>(null);
   const [eventMode, setEventMode] = useState<EventMode>('shot');
   const [showZones, setShowZones] = useState(true);
+  const [showZoneNumbers, setShowZoneNumbers] = useState(false);
   const pitchRef = useRef<SVGSVGElement>(null);
 
   const stats = useMemo(() => {
@@ -59,8 +69,11 @@ function MatchEditor() {
   };
 
   const handleExport = () => {
-    if (pitchRef.current) {
-      exportToPng(pitchRef.current, `match-${currentMatch?.date || 'export'}.png`);
+    if (pitchRef.current && currentMatch) {
+      const filename = `${currentMatch.homeTeam.name}-vs-${currentMatch.awayTeam.name}`
+        .replace(/\s+/g, '-')
+        .toLowerCase();
+      exportToPng(pitchRef.current, `${filename}.png`);
     }
   };
 
@@ -72,44 +85,37 @@ function MatchEditor() {
 
   if (!currentMatch) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center' }}>
-        <h1 style={{ marginBottom: '20px' }}>Fotti - Football Pitch Analyzer</h1>
-        <button
-          onClick={handleNewMatch}
-          style={{
-            padding: '12px 24px',
-            fontSize: '16px',
-            background: '#3b82f6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-          }}
-        >
+      <div className="min-h-screen flex flex-col items-center justify-center p-8">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold mb-2 text-evergreen-600 dark:text-evergreen-400">
+            Fotti
+          </h1>
+          <p className="text-muted-foreground">Football Pitch Analyzer</p>
+        </div>
+        <Button onClick={handleNewMatch} size="lg">
+          <Plus className="mr-2 h-4 w-4" />
           Create New Match
-        </button>
+        </Button>
         {existingMatches.length > 0 && (
-          <div style={{ marginTop: '30px' }}>
-            <h3>Previous Matches</h3>
-            <div
-              style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}
-            >
-              {existingMatches.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => loadMatch(m.id)}
-                  style={{
-                    padding: '8px 16px',
-                    background: '#f3f4f6',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
-                >
-                  {m.date} - {m.homeTeam.name} vs {m.awayTeam.name} ({m.events.length} events)
-                </button>
-              ))}
+          <div className="mt-8 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4 text-center">Previous Matches</h3>
+            <div className="flex flex-col gap-2">
+              {existingMatches
+                .slice(-5)
+                .reverse()
+                .map((m) => (
+                  <Button
+                    key={m.id}
+                    variant="outline"
+                    onClick={() => loadMatch(m.id)}
+                    className="justify-start"
+                  >
+                    {m.date} - {m.homeTeam.name} vs {m.awayTeam.name}
+                    <span className="ml-auto text-muted-foreground text-xs">
+                      {m.events.length} events
+                    </span>
+                  </Button>
+                ))}
             </div>
           </div>
         )}
@@ -118,109 +124,100 @@ function MatchEditor() {
   }
 
   return (
-    <div style={{ padding: '20px', maxWidth: '900px', margin: '0 auto' }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '20px',
-        }}
-      >
-        <h1>
-          {currentMatch.homeTeam.name} vs {currentMatch.awayTeam.name}
-        </h1>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            onClick={() => setShowZones(!showZones)}
-            style={{
-              padding: '8px 12px',
-              background: '#e5e7eb',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            {showZones ? 'Hide' : 'Show'} Zones
-          </button>
-          <button
-            onClick={handleExport}
-            style={{
-              padding: '8px 12px',
-              background: '#10b981',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            Export PNG
-          </button>
-          <button
-            onClick={undoLastEvent}
-            style={{
-              padding: '8px 12px',
-              background: '#f59e0b',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            Undo
-          </button>
-          <button
-            onClick={clearMatch}
-            style={{
-              padding: '8px 12px',
-              background: '#ef4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            Clear
-          </button>
+    <div className="min-h-screen p-4 md:p-6">
+      <div className="max-w-5xl mx-auto space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">
+              {currentMatch.homeTeam.name} vs {currentMatch.awayTeam.name}
+            </h1>
+            <span className="text-sm text-muted-foreground">{currentMatch.date}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+          </div>
         </div>
+
+        <TeamEditor />
+
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center space-x-2">
+                  <Switch id="show-zones" checked={showZones} onCheckedChange={setShowZones} />
+                  <Label htmlFor="show-zones">Show Zones</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="show-zone-numbers"
+                    checked={showZoneNumbers}
+                    onCheckedChange={setShowZoneNumbers}
+                    disabled={!showZones}
+                  />
+                  <Label htmlFor="show-zone-numbers">Zone Numbers</Label>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleExport}>
+                  Export PNG
+                </Button>
+                <Button variant="outline" size="sm" onClick={undoLastEvent}>
+                  Undo
+                </Button>
+                <Button variant="destructive" size="sm" onClick={clearMatch}>
+                  Clear
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <EventModeSelector mode={eventMode} onModeChange={setEventMode} />
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-center">
+          <Pitch
+            ref={pitchRef}
+            width={800}
+            height={520}
+            showZones={showZones}
+            showZoneNumbers={showZoneNumbers}
+            onClick={handlePitchClick}
+          >
+            {currentMatch.events.map((event: MatchEvent) => (
+              <EventMarker key={event.id} event={event} width={800} height={520} />
+            ))}
+          </Pitch>
+        </div>
+
+        {stats && (
+          <StatsTable
+            zoneStats={stats.zoneStats}
+            totalShots={stats.totalShots}
+            totalGoals={stats.totalGoals}
+            totalConceded={stats.totalConceded}
+            totalConcededGoals={stats.totalConcededGoals}
+          />
+        )}
+
+        <ChartsPanel />
+
+        {pendingPosition && (eventMode === 'shot' || eventMode === 'conceded') && (
+          <OutcomeSelector onSelect={handleOutcomeSelect} onCancel={handleCancel} />
+        )}
       </div>
-
-      <EventModeSelector mode={eventMode} onModeChange={setEventMode} />
-
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
-        <Pitch
-          ref={pitchRef}
-          width={800}
-          height={520}
-          showZones={showZones}
-          onClick={handlePitchClick}
-        >
-          {currentMatch.events.map((event: MatchEvent) => (
-            <EventMarker key={event.id} event={event} width={800} height={520} />
-          ))}
-        </Pitch>
-      </div>
-
-      {stats && (
-        <StatsTable
-          zoneStats={stats.zoneStats}
-          totalShots={stats.totalShots}
-          totalGoals={stats.totalGoals}
-        />
-      )}
-
-      {pendingPosition && (eventMode === 'shot' || eventMode === 'conceded') && (
-        <OutcomeSelector onSelect={handleOutcomeSelect} onCancel={handleCancel} />
-      )}
     </div>
   );
 }
 
 function App() {
   return (
-    <MatchProvider>
-      <MatchEditor />
-    </MatchProvider>
+    <ThemeProvider>
+      <MatchProvider>
+        <MatchEditor />
+      </MatchProvider>
+    </ThemeProvider>
   );
 }
 
