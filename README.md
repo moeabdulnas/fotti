@@ -36,3 +36,8 @@ The main application code lives in the `src` directory:
 - **React** (v19) - Core UI library.
 - **Tailwind CSS** (v4) - Utility-first CSS framework for styling.
 - **Recharts** - Composable charting library built on React components for data visualization.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+It is completely free to use, modify, and distribute.
