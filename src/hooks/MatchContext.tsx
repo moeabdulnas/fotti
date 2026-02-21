@@ -17,6 +17,9 @@ interface MatchContextType {
   createNewMatch: (homeTeam: Team, awayTeam: Team) => void;
   updateHomeTeam: (name: string) => void;
   updateAwayTeam: (name: string) => void;
+  updateHomeScore: (score: number) => void;
+  updateAwayScore: (score: number) => void;
+  updateDate: (date: string) => void;
   addShot: (x: number, y: number, outcome: ShotOutcome) => void;
   addConceded: (x: number, y: number, outcome: ShotOutcome) => void;
   addBallLoss: (x: number, y: number) => void;
@@ -41,6 +44,8 @@ function createEmptyMatch(homeTeam: Team, awayTeam: Team): Match {
     date: new Date().toISOString().split('T')[0],
     homeTeam,
     awayTeam,
+    homeScore: 0,
+    awayScore: 0,
     events: [],
   };
 }
@@ -89,6 +94,27 @@ export function MatchProvider({ children }: { children: ReactNode }) {
     setCurrentMatch((prev) => {
       if (!prev) return prev;
       return { ...prev, awayTeam: { ...prev.awayTeam, name } };
+    });
+  }, []);
+
+  const updateHomeScore = useCallback((score: number) => {
+    setCurrentMatch((prev) => {
+      if (!prev) return prev;
+      return { ...prev, homeScore: score };
+    });
+  }, []);
+
+  const updateAwayScore = useCallback((score: number) => {
+    setCurrentMatch((prev) => {
+      if (!prev) return prev;
+      return { ...prev, awayScore: score };
+    });
+  }, []);
+
+  const updateDate = useCallback((date: string) => {
+    setCurrentMatch((prev) => {
+      if (!prev) return prev;
+      return { ...prev, date };
     });
   }, []);
 
@@ -275,6 +301,9 @@ export function MatchProvider({ children }: { children: ReactNode }) {
         createNewMatch,
         updateHomeTeam,
         updateAwayTeam,
+        updateHomeScore,
+        updateAwayScore,
+        updateDate,
         addShot,
         addConceded,
         addBallLoss,

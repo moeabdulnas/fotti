@@ -237,7 +237,7 @@ function MatchEditor() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold">
-              {currentMatch.homeTeam.name} {t('vs')} {currentMatch.awayTeam.name}
+              {currentMatch.homeTeam.name} {currentMatch.homeScore ?? 0} - {currentMatch.awayScore ?? 0} {currentMatch.awayTeam.name}
             </h1>
             <span className="text-sm text-muted-foreground">{currentMatch.date}</span>
           </div>

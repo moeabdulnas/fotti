@@ -96,6 +96,8 @@ export interface Match {
   date: string;
   homeTeam: Team;
   awayTeam: Team;
+  homeScore?: number;
+  awayScore?: number;
   events: MatchEvent[];
 }
 

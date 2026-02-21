@@ -8,7 +8,7 @@ import { useMatch } from '@/hooks/useMatch';
 import { useLanguage } from '@/hooks/LanguageContext';
 
 export function TeamEditor() {
-  const { currentMatch, updateHomeTeam, updateAwayTeam } = useMatch();
+  const { currentMatch, updateHomeTeam, updateAwayTeam, updateHomeScore, updateAwayScore, updateDate } = useMatch();
   const { t } = useLanguage();
   const [editingHome, setEditingHome] = useState(false);
   const [editingAway, setEditingAway] = useState(false);
@@ -43,8 +43,18 @@ export function TeamEditor() {
 
   return (
     <Card className="mb-4">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
         <CardTitle className="text-lg">{t('matchTeams')}</CardTitle>
+        <div className="flex items-center gap-2">
+          <Label htmlFor="match-date" className="text-muted-foreground">{t('date')}:</Label>
+          <Input 
+            id="match-date"
+            type="date" 
+            value={currentMatch.date} 
+            onChange={(e) => updateDate(e.target.value)} 
+            className="h-8 w-auto"
+          />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="flex gap-6">
@@ -76,6 +86,16 @@ export function TeamEditor() {
                 </>
               )}
             </div>
+            <div className="mt-4 flex items-center gap-3">
+              <Label className="text-muted-foreground">{t('score')}</Label>
+              <Input
+                type="number"
+                min="0"
+                value={currentMatch.homeScore ?? 0}
+                onChange={(e) => updateHomeScore(parseInt(e.target.value) || 0)}
+                className="w-20 h-8"
+              />
+            </div>
           </div>
           <div className="flex items-center text-muted-foreground font-semibold">{t('vs')}</div>
           <div className="flex-1">
@@ -105,6 +125,16 @@ export function TeamEditor() {
                   </Button>
                 </>
               )}
+            </div>
+            <div className="mt-4 flex items-center gap-3">
+              <Label className="text-muted-foreground">{t('score')}</Label>
+              <Input
+                type="number"
+                min="0"
+                value={currentMatch.awayScore ?? 0}
+                onChange={(e) => updateAwayScore(parseInt(e.target.value) || 0)}
+                className="w-20 h-8"
+              />
             </div>
           </div>
         </div>
