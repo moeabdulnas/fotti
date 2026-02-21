@@ -3,6 +3,7 @@ import { Pitch } from './components/Pitch';
 import { EventMarker } from './components/Pitch/EventMarker';
 import { OutcomeSelector } from './components/OutcomeSelector';
 import { EventModeSelector, type EventMode } from './components/EventModeSelector';
+import { EventEditor } from './components/EventEditor';
 import { StatsTable } from './components/StatsTable';
 import { MatchProvider } from './hooks/MatchContext';
 import { useMatch } from './hooks/useMatch';
@@ -60,9 +61,11 @@ function MatchEditor() {
     loadMatch,
     importMatch,
     exportMatch,
+    updateEvent,
   } = useMatch();
   const { t } = useLanguage();
   const [pendingPosition, setPendingPosition] = useState<{ x: number; y: number } | null>(null);
+  const [editingEvent, setEditingEvent] = useState<MatchEvent | null>(null);
   const [eventMode, setEventMode] = useState<EventMode>('shot');
   const [showZones, setShowZones] = useState(true);
   const [showZoneNumbers, setShowZoneNumbers] = useState(false);
@@ -326,7 +329,13 @@ function MatchEditor() {
             onClick={handlePitchClick}
           >
             {currentMatch.events.map((event: MatchEvent) => (
-              <EventMarker key={event.id} event={event} width={800} height={520} />
+              <EventMarker 
+                key={event.id} 
+                event={event} 
+                width={800} 
+                height={520} 
+                onClick={(e) => setEditingEvent(e)}
+              />
             ))}
           </Pitch>
         </div>
@@ -345,6 +354,14 @@ function MatchEditor() {
 
         {pendingPosition && (eventMode === 'shot' || eventMode === 'conceded') && (
           <OutcomeSelector onSelect={handleOutcomeSelect} onCancel={handleCancel} />
+        )}
+
+        {editingEvent && (
+          <EventEditor
+            event={editingEvent}
+            onSave={(updates) => updateEvent(editingEvent.id, updates)}
+            onClose={() => setEditingEvent(null)}
+          />
         )}
       </div>
     </div>

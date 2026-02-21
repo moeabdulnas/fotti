@@ -49,6 +49,7 @@ export interface ShotEvent {
   zone: ZoneId;
   outcome: ShotOutcome;
   minute: number;
+  half?: 1 | 2;
   timestamp: number;
 }
 
@@ -59,6 +60,7 @@ export interface ConcededEvent {
   zone: ZoneId;
   outcome: ShotOutcome;
   minute: number;
+  half?: 1 | 2;
   timestamp: number;
 }
 
@@ -68,6 +70,7 @@ export interface BallLossEvent {
   position: Position;
   zone: ZoneId;
   minute: number;
+  half?: 1 | 2;
   timestamp: number;
 }
 
@@ -77,6 +80,7 @@ export interface RecoveryEvent {
   position: Position;
   zone: ZoneId;
   minute: number;
+  half?: 1 | 2;
   timestamp: number;
 }
 

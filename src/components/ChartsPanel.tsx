@@ -16,6 +16,10 @@ import html2canvas from 'html2canvas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Pitch } from '@/components/Pitch';
+import { ZONES } from '@/utils/zones';
 import { useMatch } from '@/hooks/useMatch';
 import { useLanguage } from '@/hooks/LanguageContext';
 import { calculateStats } from '@/utils/stats';
@@ -35,10 +39,87 @@ const SHOT_AGAINST_COLOR = '#b847a3';
 const EXPORT_WIDTH = 800;
 const EXPORT_HEIGHT = 380;
 
+function HeatmapPitch({ data, total, dataKey, color }: { data: any[], total: number, dataKey: string, color: string }) {
+  return (
+    <div className="flex justify-center mt-4 mb-4">
+      <Pitch width={600} height={420} showZones={true} showZoneNumbers={false}>
+        {ZONES.map((zone) => {
+          const zoneStat = data.find((d) => d.zoneId === zone.id || d.zone === `Zone ${zone.id}`);
+          const value = zoneStat ? zoneStat[dataKey] : 0;
+          const percentage = total > 0 ? (value / total) * 100 : 0;
+          
+          if (value === 0) return null;
+          
+          const pitchUnit = Math.min(600 / 100, 420 / 70);
+          const pitchWidth = pitchUnit * 100;
+          const pitchHeight = pitchUnit * 70;
+          const offsetX = (600 - pitchWidth) / 2;
+          const offsetY = (420 - pitchHeight) / 2;
+          
+          const x = offsetX + (zone.x / 100) * pitchWidth;
+          const y = offsetY + (zone.y / 100) * pitchHeight;
+          const width = (zone.width / 100) * pitchWidth;
+          const height = (zone.height / 100) * pitchHeight;
+          
+          const fillOpacity = Math.max(0.1, percentage / 100);
+          const rgbMatch = color.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+          let rgbaColor = `rgba(255, 255, 255, ${fillOpacity})`;
+          if (rgbMatch) {
+            const r = parseInt(rgbMatch[1], 16);
+            const g = parseInt(rgbMatch[2], 16);
+            const b = parseInt(rgbMatch[3], 16);
+            rgbaColor = `rgba(${r}, ${g}, ${b}, ${fillOpacity})`;
+          } else if (color.startsWith('rgb')) {
+             // Basic support for rgb/rgba strings if provided
+             rgbaColor = color.replace(')', `, ${fillOpacity})`).replace('rgb(', 'rgba(');
+          }
+          
+          return (
+            <g key={`heatmap-${zone.id}`}>
+              <rect
+                x={x}
+                y={y}
+                width={width}
+                height={height}
+                fill={rgbaColor}
+                style={{ pointerEvents: 'none' }}
+              />
+              <text
+                x={x + width / 2}
+                y={y + height / 2 - 8}
+                fill="white"
+                fontSize={14}
+                fontWeight="bold"
+                textAnchor="middle"
+                dominantBaseline="middle"
+                style={{ pointerEvents: 'none', textShadow: '1px 1px 2px black' }}
+              >
+                {percentage.toFixed(1)}%
+              </text>
+              <text
+                x={x + width / 2}
+                y={y + height / 2 + 8}
+                fill="white"
+                fontSize={12}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                style={{ pointerEvents: 'none', textShadow: '1px 1px 2px black' }}
+              >
+                ({value})
+              </text>
+            </g>
+          );
+        })}
+      </Pitch>
+    </div>
+  );
+}
+
 export function ChartsPanel() {
   const { currentMatch } = useMatch();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<ChartTab>('shots');
+  const [viewType, setViewType] = useState<'chart' | 'pitch'>('chart');
   const exportRef = useRef<HTMLDivElement>(null);
 
   const stats = useMemo(() => {
@@ -251,7 +332,19 @@ export function ChartsPanel() {
     <Card className="mt-4">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle>{t('analysis')}</CardTitle>
+          <div className="flex items-center gap-4">
+            <CardTitle>{t('analysis')}</CardTitle>
+            <div className="flex items-center space-x-2 border-l pl-4 ml-2 border-border">
+              <Switch 
+                id="view-type" 
+                checked={viewType === 'pitch'} 
+                onCheckedChange={(c) => setViewType(c ? 'pitch' : 'chart')} 
+              />
+              <Label htmlFor="view-type">
+                {viewType === 'pitch' ? t('pitchView') || 'Pitch View' : t('chartView') || 'Chart View'}
+              </Label>
+            </div>
+          </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleExportCSV}>
               <Download className="h-4 w-4 mr-2" />
@@ -438,15 +531,19 @@ export function ChartsPanel() {
 
           <TabsContent value="shots" className="mt-4">
             {hasShots ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={shotZoneData} margin={{ left: 20, right: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="shots" fill={SHOT_FOR_COLOR} name={t('shotsFor')} />
-                </BarChart>
-              </ResponsiveContainer>
+              viewType === 'chart' ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={shotZoneData} margin={{ left: 20, right: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="shots" fill={SHOT_FOR_COLOR} name={t('shotsFor')} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <HeatmapPitch data={stats.zoneStats} total={stats.totalShots} dataKey="shots" color={SHOT_FOR_COLOR} />
+              )
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                 {t('noShotsRecorded')}
@@ -456,15 +553,19 @@ export function ChartsPanel() {
 
           <TabsContent value="conceded" className="mt-4">
             {hasConceded ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={concededZoneData} margin={{ left: 20, right: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="conceded" fill={SHOT_AGAINST_COLOR} name={t('shotsAgainstTab')} />
-                </BarChart>
-              </ResponsiveContainer>
+              viewType === 'chart' ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={concededZoneData} margin={{ left: 20, right: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="conceded" fill={SHOT_AGAINST_COLOR} name={t('shotsAgainstTab')} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <HeatmapPitch data={stats.zoneStats} total={stats.totalConceded} dataKey="conceded" color={SHOT_AGAINST_COLOR} />
+              )
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                 {t('noShotsConceded')}
@@ -558,15 +659,19 @@ export function ChartsPanel() {
 
           <TabsContent value="ball-losses" className="mt-4">
             {hasBallLosses ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={ballLossesZoneData} margin={{ left: 20, right: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="ballLosses" fill="#f59e0b" name={t('ballLosses')} />
-                </BarChart>
-              </ResponsiveContainer>
+              viewType === 'chart' ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={ballLossesZoneData} margin={{ left: 20, right: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="ballLosses" fill="#f59e0b" name={t('ballLosses')} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <HeatmapPitch data={stats.zoneStats} total={stats.totalBallLosses} dataKey="ballLosses" color="#f59e0b" />
+              )
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                 {t('noBallLossesRecorded')}
@@ -576,15 +681,19 @@ export function ChartsPanel() {
 
           <TabsContent value="recoveries" className="mt-4">
             {hasRecoveries ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={recoveriesZoneData} margin={{ left: 20, right: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="recoveries" fill="#3b82f6" name={t('recoveries')} />
-                </BarChart>
-              </ResponsiveContainer>
+              viewType === 'chart' ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={recoveriesZoneData} margin={{ left: 20, right: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="recoveries" fill="#3b82f6" name={t('recoveries')} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <HeatmapPitch data={stats.zoneStats} total={stats.totalRecoveries} dataKey="recoveries" color="#3b82f6" />
+              )
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                 {t('noRecoveriesRecorded')}

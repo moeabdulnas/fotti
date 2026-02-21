@@ -4,6 +4,7 @@ interface EventMarkerProps {
   event: MatchEvent;
   width: number;
   height: number;
+  onClick?: (event: MatchEvent) => void;
 }
 
 const SHOT_OUTCOME_COLORS: Record<ShotEvent['outcome'], string> = {
@@ -13,7 +14,7 @@ const SHOT_OUTCOME_COLORS: Record<ShotEvent['outcome'], string> = {
   blocked: '#ef4444',
 };
 
-export function EventMarker({ event, width, height }: EventMarkerProps) {
+export function EventMarker({ event, width, height, onClick }: EventMarkerProps) {
   const pitchUnit = Math.min(width / 100, height / 70);
   const pitchWidth = pitchUnit * 100;
   const pitchHeight = pitchUnit * 70;
@@ -49,7 +50,7 @@ export function EventMarker({ event, width, height }: EventMarkerProps) {
       fill = '#6b7280';
   }
 
-  const title = `${event.type}${outcome ? ` - ${outcome}` : ''} - Zone ${event.zone}`;
+  const title = `${event.type}${outcome ? ` - ${outcome}` : ''} - Zone ${event.zone} - ${event.half ? `Half ${event.half}` : 'H1'} Minute ${event.minute}`;
 
   if (marker === 'square') {
     const size = pitchUnit * 1.2;
@@ -63,6 +64,10 @@ export function EventMarker({ event, width, height }: EventMarkerProps) {
         stroke="white"
         strokeWidth={2}
         style={{ cursor: 'pointer' }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick?.(event);
+        }}
       >
         <title>{title}</title>
       </rect>
@@ -78,6 +83,10 @@ export function EventMarker({ event, width, height }: EventMarkerProps) {
         stroke="white"
         strokeWidth={2}
         style={{ cursor: 'pointer' }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick?.(event);
+        }}
       >
         <title>{title}</title>
       </polygon>
@@ -93,6 +102,10 @@ export function EventMarker({ event, width, height }: EventMarkerProps) {
       stroke="white"
       strokeWidth={2}
       style={{ cursor: 'pointer' }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.(event);
+      }}
     >
       <title>{title}</title>
     </circle>

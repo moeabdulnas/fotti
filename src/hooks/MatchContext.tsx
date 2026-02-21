@@ -28,6 +28,7 @@ interface MatchContextType {
   getMatches: () => Match[];
   importMatch: (data: unknown) => { success: boolean; error?: string };
   exportMatch: () => string | null;
+  updateEvent: (id: string, updates: Partial<MatchEvent>) => void;
 }
 
 const MatchContext = createContext<MatchContextType | null>(null);
@@ -160,6 +161,16 @@ export function MatchProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const updateEvent = useCallback((id: string, updates: Partial<MatchEvent>) => {
+    setCurrentMatch((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        events: prev.events.map((e) => (e.id === id ? { ...e, ...updates } as MatchEvent : e)),
+      };
+    });
+  }, []);
+
   const undoLastEvent = useCallback(() => {
     setCurrentMatch((prev) => {
       if (!prev || prev.events.length === 0) return prev;
@@ -275,6 +286,7 @@ export function MatchProvider({ children }: { children: ReactNode }) {
         getMatches,
         importMatch,
         exportMatch,
+        updateEvent,
       }}
     >
       {children}
