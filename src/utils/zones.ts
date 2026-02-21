@@ -22,8 +22,18 @@ export const ZONES: Zone[] = [
 ];
 
 export function getZoneForPosition(x: number, y: number): ZoneId {
+  // We divide the x-axis (length, 0-100) into 6 equal columns. Each is ~16.67 units wide.
+  // Using ternary operators checks which column the given x coordinate falls into.
   const col = x < 16.67 ? 0 : x < 33.33 ? 1 : x < 50 ? 2 : x < 66.67 ? 3 : x < 83.33 ? 4 : 5;
+  
+  // We divide the y-axis (width, 0-100) into 3 equal rows. Each is ~33.33 units high.
   const row = y < 33.33 ? 0 : y < 66.67 ? 1 : 2;
+  
+  // We calculate a 0-indexed zone integer based on row and column.
+  // Since there are 6 columns per row, multiplying the row by 6 and adding the column index
+  // flattens the 2D grid into a 1D array of size 18.
   const zoneIndex = row * 6 + col;
+  
+  // Convert our 0-indexed zone number to a 1-indexed string representation (Zone '1' through '18')
   return String(zoneIndex + 1) as ZoneId;
 }

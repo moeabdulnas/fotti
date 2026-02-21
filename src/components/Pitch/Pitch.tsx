@@ -15,25 +15,46 @@ export const Pitch = forwardRef<SVGSVGElement, PitchProps>(function Pitch(
   ref
 ) {
   const patternId = useId();
-  const pitchUnit = Math.min(width / 100, height / 70);
+    // We use a responsive pitch unit calculated from either the width or height, 
+    // depending on which is smaller, to maintain the correct aspect ratio (100x70).
+    const pitchUnit = Math.min(width / 100, height / 70);
 
-  const pitchWidth = pitchUnit * 100;
-  const pitchHeight = pitchUnit * 70;
-  const offsetX = (width - pitchWidth) / 2;
-  const offsetY = (height - pitchHeight) / 2;
+    // Calculate the actual drawing dimensions of the pitch.
+    const pitchWidth = pitchUnit * 100;
+    const pitchHeight = pitchUnit * 70;
+    
+    // Calculate the offsets to center the pitch within the SVG container.
+    // This creates equal padding on both sides (letterboxing) if the container
+    // doesn't exactly match the 100:70 aspect ratio.
+    const offsetX = (width - pitchWidth) / 2;
+    const offsetY = (height - pitchHeight) / 2;
 
   const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!onClick) return;
     const svg = e.currentTarget;
-    // Use SVG API to convert screen coords to viewBox coords (handles letterboxing / preserveAspectRatio)
+    
+    // We use the native SVG API to convert screen coordinates (mouse click) 
+    // into the internal viewBox coordinates. This is necessary because the SVG 
+    // might be scaled, letterboxed, or have preserveAspectRatio applied by the browser,
+    // so a direct pixel-to-pixel mapping would be inaccurate.
     const pt = svg.createSVGPoint();
     pt.x = e.clientX;
     pt.y = e.clientY;
+    
+    // getScreenCTM() returns the transformation matrix that maps SVG units to screen coordinates.
     const screenCTM = svg.getScreenCTM();
     if (!screenCTM) return;
+    
+    // By multiplying our screen point by the INVERSE of the matrix, we get the point 
+    // relative to the internal SVG coordinate system (the viewBox).
     const { x: viewBoxX, y: viewBoxY } = pt.matrixTransform(screenCTM.inverse());
+    
+    // Now we calculate the click position as a percentage (0-100) relative to the 
+    // actual pitch area, subtracting the offsets (margins) that might exist.
     const clickX = ((viewBoxX - offsetX) / pitchWidth) * 100;
     const clickY = ((viewBoxY - offsetY) / pitchHeight) * 100;
+    
+    // Only trigger the click event if the user clicked INSIDE the boundaries of the pitch.
     if (clickX >= 0 && clickX <= 100 && clickY >= 0 && clickY <= 100) {
       onClick(clickX, clickY);
     }

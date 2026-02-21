@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   BarChart,
   Bar,
@@ -20,6 +20,8 @@ import { useMatch } from '@/hooks/useMatch';
 import { useLanguage } from '@/hooks/LanguageContext';
 import { calculateStats } from '@/utils/stats';
 
+type ChartTab = 'shots' | 'conceded' | 'outcomes' | 'zone-dist';
+
 const OUTCOME_COLORS: Record<string, string> = {
   Goal: '#22c55e',
   'On Target': '#3b82f6',
@@ -30,10 +32,14 @@ const OUTCOME_COLORS: Record<string, string> = {
 const SHOT_FOR_COLOR = '#26d947';
 const SHOT_AGAINST_COLOR = '#b847a3';
 
+const EXPORT_WIDTH = 800;
+const EXPORT_HEIGHT = 380;
+
 export function ChartsPanel() {
   const { currentMatch } = useMatch();
   const { t } = useLanguage();
-  const chartRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<ChartTab>('shots');
+  const exportRef = useRef<HTMLDivElement>(null);
 
   const stats = useMemo(() => {
     if (!currentMatch) return null;
@@ -64,13 +70,21 @@ export function ChartsPanel() {
 
   const shotOutcomeData = useMemo(() => {
     if (!currentMatch) return [];
+    
+    // First, isolate all 'shot' events to calculate their specific outcomes.
+    // We filter out conceding events, ball losses, and recoveries.
     const shots = currentMatch.events.filter((e) => e.type === 'shot');
+    
+    // Initialize a tally map tracking the four possible shot outcomes.
+    // We structure this with capitalized keys so the names display correctly in charts.
     const outcomeMap: Record<string, number> = {
       'On Target': 0,
       'Off Target': 0,
       Blocked: 0,
       Goal: 0,
     };
+    
+    // Accumulate the tallies based on the 'outcome' property string.
     shots.forEach((s) => {
       const shot = s as { outcome: string };
       switch (shot.outcome) {
@@ -88,6 +102,11 @@ export function ChartsPanel() {
           break;
       }
     });
+    
+    // Recharts expects an array of objects ({name, value}), not a dictionary record.
+    // We convert the dictionary into a tuple array using Object.entries, 
+    // filter out any outcomes with a value of 0 to declutter the pie chart, 
+    // and map it into the Recharts `{name, value}` structure.
     return Object.entries(outcomeMap)
       .filter(([, v]) => v > 0)
       .map(([name, value]) => ({ name, value }));
@@ -162,20 +181,35 @@ export function ChartsPanel() {
     URL.revokeObjectURL(url);
   };
 
+  const chartTitleByTab: Record<ChartTab, string> = {
+    shots: t('shotsFor'),
+    conceded: t('shotsAgainstTab'),
+    outcomes: t('shotOutcomes'),
+    'zone-dist': t('zoneDist'),
+  };
+
   const handleExportChartPng = async () => {
-    if (!chartRef.current) return;
+    if (!exportRef.current) return;
 
     try {
-      const element = chartRef.current;
-      const canvas = await html2canvas(element, {
+      // html2canvas takes a DOM element and essentially "takes a screenshot" of it, 
+      // rendering it onto a virtual HTML5 Canvas. We pass scale: 2 for a higher resolution 
+      // output, and ensure the background is solid white instead of transparent.
+      const canvas = await html2canvas(exportRef.current, {
         scale: 2,
         backgroundColor: '#ffffff',
         logging: false,
       });
 
+      // To trigger a download, we create a phantom <a> tag dynamically.
       const link = document.createElement('a');
       link.download = `${currentMatch?.homeTeam.name}-vs-${currentMatch?.awayTeam.name}-chart.png`;
+      
+      // Convert the rendered canvas into a base64 Data URL (image/png) and set it as the link's href.
       link.href = canvas.toDataURL('image/png');
+      
+      // Programmatically click the link to initiate the browser's download dialog, 
+      // and let the browser handle saving the image file.
       link.click();
     } catch (error) {
       console.error('Failed to export chart:', error);
@@ -204,8 +238,139 @@ export function ChartsPanel() {
           </div>
         </div>
       </CardHeader>
-      <CardContent ref={chartRef}>
-        <Tabs defaultValue="shots" className="w-full">
+      <CardContent>
+        {/* Off-screen container for PNG export: current chart name (centered) + chart only */}
+        <div
+          ref={exportRef}
+          style={{
+            position: 'fixed',
+            left: '-9999px',
+            top: 0,
+            width: EXPORT_WIDTH,
+            minHeight: EXPORT_HEIGHT,
+            padding: 24,
+            backgroundColor: '#ffffff',
+            boxSizing: 'border-box',
+          }}
+        >
+          <h2
+            style={{
+              textAlign: 'center',
+              margin: 0,
+              marginBottom: 16,
+              fontSize: 18,
+              fontWeight: 600,
+            }}
+          >
+            {chartTitleByTab[activeTab]}
+          </h2>
+          {activeTab === 'shots' && hasShots && (
+            <BarChart
+              width={EXPORT_WIDTH - 48}
+              height={300}
+              data={shotZoneData}
+              margin={{ left: 20, right: 20 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="shots" fill={SHOT_FOR_COLOR} name={t('shotsFor')} />
+            </BarChart>
+          )}
+          {activeTab === 'conceded' && hasConceded && (
+            <BarChart
+              width={EXPORT_WIDTH - 48}
+              height={300}
+              data={concededZoneData}
+              margin={{ left: 20, right: 20 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="conceded" fill={SHOT_AGAINST_COLOR} name={t('shotsAgainstTab')} />
+            </BarChart>
+          )}
+          {activeTab === 'outcomes' && (
+            <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {shotOutcomeData.length > 0 && (
+                <div>
+                  <h4 style={{ textAlign: 'center', marginBottom: 8, fontSize: 14 }}>
+                    {t('shotsFor')}
+                  </h4>
+                  <PieChart width={280} height={200}>
+                    <Pie
+                      data={shotOutcomeData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={75}
+                      dataKey="value"
+                      label={({ name, percent = 0 }) =>
+                        `${name} (${(percent * 100).toFixed(0)}%)`
+                      }
+                    >
+                      {shotOutcomeData.map((entry) => (
+                        <Cell
+                          key={`cell-${entry.name}`}
+                          fill={OUTCOME_COLORS[entry.name] || '#6b7280'}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </div>
+              )}
+              {concededOutcomeData.length > 0 && (
+                <div>
+                  <h4 style={{ textAlign: 'center', marginBottom: 8, fontSize: 14 }}>
+                    {t('shotsAgainstTab')}
+                  </h4>
+                  <PieChart width={280} height={200}>
+                    <Pie
+                      data={concededOutcomeData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={75}
+                      dataKey="value"
+                      label={({ name, percent = 0 }) =>
+                        `${name} (${(percent * 100).toFixed(0)}%)`
+                      }
+                    >
+                      {concededOutcomeData.map((entry) => (
+                        <Cell
+                          key={`cell-${entry.name}`}
+                          fill={OUTCOME_COLORS[entry.name] || '#6b7280'}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </div>
+              )}
+            </div>
+          )}
+          {activeTab === 'zone-dist' && (
+            <BarChart
+              width={EXPORT_WIDTH - 48}
+              height={300}
+              data={stats.zoneStats}
+              layout="vertical"
+              margin={{ left: 20 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" />
+              <YAxis dataKey="zoneId" type="category" width={70} tick={{ fontSize: 12 }} />
+              <Tooltip />
+              <Bar dataKey="shots" fill={SHOT_FOR_COLOR} name={t('shotsFor')} />
+              <Bar dataKey="conceded" fill={SHOT_AGAINST_COLOR} name={t('shotsAgainstTab')} />
+            </BarChart>
+          )}
+        </div>
+
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ChartTab)} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="shots">{t('shotsFor')}</TabsTrigger>
             <TabsTrigger value="conceded">{t('shotsAgainstTab')}</TabsTrigger>

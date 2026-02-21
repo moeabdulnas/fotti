@@ -1,73 +1,38 @@
-# React + TypeScript + Vite
+# Fotti
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React web application built with Vite, TypeScript, and Tailwind CSS.
 
-Currently, two official plugins are available:
+## 🚀 Setup & Run
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This project uses `pnpm` as its package manager.
 
-## React Compiler
+```bash
+# 1. Install dependencies
+pnpm install
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+# 2. Start the development server
+pnpm dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Other Commands
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x';
-import reactDom from 'eslint-plugin-react-dom';
+- **Build for production:** `pnpm build`
+- **Preview production build:** `pnpm preview`
+- **Lint the code:** `pnpm lint`
+- **Format the code:** `pnpm format`
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
-```
+## 📁 Directory Structure
+
+The main application code lives in the `src` directory:
+
+- `src/components/` - Reusable UI components (e.g., ChartsPanel, StatsTable).
+- `src/hooks/` - Custom React hooks and Context providers for global state (Theme, Language, Match).
+- `src/utils/` - Helper functions, data processing (stats, storage, export, zones).
+- `src/lib/` - External library integrations and core utilities (e.g., translations, `clsx`/`tailwind-merge` utils).
+- `src/types/` - TypeScript type definitions and interfaces.
+
+## 📦 Three Main Libraries
+
+- **React** (v19) - Core UI library.
+- **Tailwind CSS** (v4) - Utility-first CSS framework for styling.
+- **Recharts** - Composable charting library built on React components for data visualization.

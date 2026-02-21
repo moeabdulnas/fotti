@@ -51,6 +51,9 @@ function getInitialMatch(): Match | null {
 }
 
 function getNextMinute(events: MatchEvent[]): number {
+  // Simply calculates the logical progression of events for a match by counting
+  // the total events and adding 1. This generates a sequential, 1-indexed count
+  // to serve as the match "minute" or logical sequence number.
   return events.length + 1;
 }
 
@@ -183,18 +186,25 @@ export function MatchProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const importMatch = useCallback((data: unknown): { success: boolean; error?: string } => {
+    // 1. Initial Validation: Determine if the imported data exists and is a Javascript Object.
     if (!data || typeof data !== 'object') {
       return { success: false, error: 'Invalid data format' };
     }
 
+    // Cast data to a Record (key-value dictionary) to allow type-safe checks on generic objects
     const match = data as Record<string, unknown>;
 
+    // 2. Validate Root Level Properties:
+    // We strictly enforce that the payload has a unique 'id' and a 'date'.
     if (!match.id || typeof match.id !== 'string') {
       return { success: false, error: 'Missing or invalid id' };
     }
     if (!match.date || typeof match.date !== 'string') {
       return { success: false, error: 'Missing or invalid date' };
     }
+    
+    // We extract home and away team objects. We verify they exist, are objects,
+    // and specifically contain an id and name. If a team is malformed, we throw an error.
     const homeTeam = match.homeTeam as Record<string, unknown> | undefined;
     const awayTeam = match.awayTeam as Record<string, unknown> | undefined;
     if (!homeTeam || typeof homeTeam !== 'object' || !homeTeam.id || !homeTeam.name) {
@@ -203,26 +213,41 @@ export function MatchProvider({ children }: { children: ReactNode }) {
     if (!awayTeam || typeof awayTeam !== 'object' || !awayTeam.id || !awayTeam.name) {
       return { success: false, error: 'Missing or invalid awayTeam' };
     }
+    
+    // We enforce that the events array exists, even if it is empty.
     if (!Array.isArray(match.events)) {
       return { success: false, error: 'Missing or invalid events' };
     }
 
+    // 3. Validate Match Events Loop:
+    // Iterate through all historical events within the imported match and strictly validate them
     for (const event of match.events) {
       if (!event || typeof event !== 'object') {
         return { success: false, error: 'Invalid event format' };
       }
+      
       const e = event as Record<string, unknown>;
+      
+      // Every single match event MUST have these base positional and chronological properties
       if (!e.id || !e.type || !e.position || !e.zone || !e.minute || !e.timestamp) {
         return { success: false, error: 'Invalid event properties' };
       }
+      
+      // Strict allowlist for event types. If a random string exists, reject the payload
       if (!['shot', 'conceded', 'ball_loss', 'recovery'].includes(e.type as string)) {
         return { success: false, error: 'Invalid event type' };
       }
+      
+      // Specifically for 'shot' and 'conceded' events, an outcome (e.g., 'goal', 'off_target')
+      // is mandatory. If one is missing, reject the payload.
       if ((e.type === 'shot' || e.type === 'conceded') && !e.outcome) {
         return { success: false, error: 'Missing outcome for shot event' };
       }
     }
 
+    // 4. Update Application State:
+    // Once all checks pass, we can safely coerce the unknown object to a strict Match type
+    // and load it into the application context using our React setter.
     setCurrentMatch(match as unknown as Match);
     return { success: true };
   }, []);

@@ -30,11 +30,16 @@ export interface MatchStats {
 }
 
 export function calculateStats(match: Match): MatchStats {
+  // We first segregate the single stream of match events into specific arrays 
+  // by type, utilizing TypeScript's type guard predicates (e: e is ShotEvent) 
+  // so that the resulting arrays have strictly inferred types.
   const shots = match.events.filter((e): e is ShotEvent => e.type === 'shot');
   const conceded = match.events.filter((e): e is ConcededEvent => e.type === 'conceded');
   const ballLosses = match.events.filter((e): e is BallLossEvent => e.type === 'ball_loss');
   const recoveries = match.events.filter((e): e is RecoveryEvent => e.type === 'recovery');
 
+  // We use a Map to accumulate statistics grouped by zone ID.
+  // This allows for O(1) fast lookups when we iterate through thousands of events.
   const zoneMap = new Map<ZoneId, ZoneStats>();
 
   for (const zone of ZONES) {
