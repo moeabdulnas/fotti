@@ -18,6 +18,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Pitch } from '@/components/Pitch';
 import { ZONES } from '@/utils/zones';
 import { useMatch } from '@/hooks/useMatch';
@@ -122,12 +129,23 @@ export function ChartsPanel() {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<ChartTab>('shots');
   const [viewType, setViewType] = useState<'chart' | 'pitch'>('chart');
+  const [selectedPeriod, setSelectedPeriod] = useState<'full' | '1' | '2'>('full');
   const exportRef = useRef<HTMLDivElement>(null);
 
-  const stats = useMemo(() => {
+  const filteredMatch = useMemo(() => {
     if (!currentMatch) return null;
-    return calculateStats(currentMatch);
-  }, [currentMatch]);
+    if (selectedPeriod === 'full') return currentMatch;
+    
+    return {
+      ...currentMatch,
+      events: currentMatch.events.filter(e => (e.half || 1) === Number(selectedPeriod))
+    };
+  }, [currentMatch, selectedPeriod]);
+
+  const stats = useMemo(() => {
+    if (!filteredMatch) return null;
+    return calculateStats(filteredMatch);
+  }, [filteredMatch]);
 
   const shotZoneData = useMemo(() => {
     if (!stats) return [];
@@ -174,11 +192,11 @@ export function ChartsPanel() {
   }, [stats]);
 
   const shotOutcomeData = useMemo(() => {
-    if (!currentMatch) return [];
+    if (!filteredMatch) return [];
     
     // First, isolate all 'shot' events to calculate their specific outcomes.
     // We filter out conceding events, ball losses, and recoveries.
-    const shots = currentMatch.events.filter((e) => e.type === 'shot');
+    const shots = filteredMatch.events.filter((e) => e.type === 'shot');
     
     // Initialize a tally map tracking the four possible shot outcomes.
     // We structure this with capitalized keys so the names display correctly in charts.
@@ -215,11 +233,11 @@ export function ChartsPanel() {
     return Object.entries(outcomeMap)
       .filter(([, v]) => v > 0)
       .map(([name, value]) => ({ name, value }));
-  }, [currentMatch]);
+  }, [filteredMatch]);
 
   const concededOutcomeData = useMemo(() => {
-    if (!currentMatch) return [];
-    const conceded = currentMatch.events.filter((e) => e.type === 'conceded');
+    if (!filteredMatch) return [];
+    const conceded = filteredMatch.events.filter((e) => e.type === 'conceded');
     const outcomeMap: Record<string, number> = {
       'On Target': 0,
       'Off Target': 0,
@@ -246,7 +264,7 @@ export function ChartsPanel() {
     return Object.entries(outcomeMap)
       .filter(([, v]) => v > 0)
       .map(([name, value]) => ({ name, value }));
-  }, [currentMatch]);
+  }, [filteredMatch]);
 
   const handleExportCSV = () => {
     if (!currentMatch || !stats) return;
@@ -336,15 +354,28 @@ export function ChartsPanel() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <CardTitle>{t('analysis')}</CardTitle>
-            <div className="flex items-center space-x-2 border-l pl-4 ml-2 border-border">
-              <Switch 
-                id="view-type" 
-                checked={viewType === 'pitch'} 
-                onCheckedChange={(c) => setViewType(c ? 'pitch' : 'chart')} 
-              />
-              <Label htmlFor="view-type">
-                {viewType === 'pitch' ? t('pitchView') || 'Pitch View' : t('chartView') || 'Chart View'}
-              </Label>
+            <div className="flex items-center space-x-4 border-l pl-4 ml-2 border-border">
+              <Select value={selectedPeriod} onValueChange={(v: 'full' | '1' | '2') => setSelectedPeriod(v)}>
+                <SelectTrigger className="w-[140px] h-8">
+                  <SelectValue placeholder={t('fullMatch') || 'Full Match'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full">{t('fullMatch') || 'Full Match'}</SelectItem>
+                  <SelectItem value="1">{t('firstHalf') || 'First Half'}</SelectItem>
+                  <SelectItem value="2">{t('secondHalf') || 'Second Half'}</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className="flex items-center space-x-2 border-l pl-4 border-border">
+                <Switch 
+                  id="view-type" 
+                  checked={viewType === 'pitch'} 
+                  onCheckedChange={(c) => setViewType(c ? 'pitch' : 'chart')} 
+                />
+                <Label htmlFor="view-type">
+                  {viewType === 'pitch' ? t('pitchView') || 'Pitch View' : t('chartView') || 'Chart View'}
+                </Label>
+              </div>
             </div>
           </div>
           <div className="flex gap-2">

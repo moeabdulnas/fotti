@@ -56,6 +56,7 @@ export const translations = {
     secondHalf: 'Andra Halvlek',
     minute: 'Minut',
     save: 'Spara',
+    fullMatch: 'Hela Matchen',
   },
   en: {
     appName: 'Fotti',
@@ -114,6 +115,7 @@ export const translations = {
     secondHalf: 'Second Half',
     minute: 'Minute',
     save: 'Save',
+    fullMatch: 'Full Match',
   },
 } as const;
 
