@@ -20,7 +20,7 @@ import { useMatch } from '@/hooks/useMatch';
 import { useLanguage } from '@/hooks/LanguageContext';
 import { calculateStats } from '@/utils/stats';
 
-type ChartTab = 'shots' | 'conceded' | 'outcomes' | 'zone-dist';
+type ChartTab = 'shots' | 'conceded' | 'outcomes' | 'zone-dist' | 'ball-losses' | 'recoveries';
 
 const OUTCOME_COLORS: Record<string, string> = {
   Goal: '#22c55e',
@@ -66,6 +66,28 @@ export function ChartsPanel() {
         conceded: z.conceded,
       }))
       .sort((a, b) => b.conceded - a.conceded);
+  }, [stats]);
+
+  const ballLossesZoneData = useMemo(() => {
+    if (!stats) return [];
+    return stats.zoneStats
+      .filter((z) => z.ballLosses > 0)
+      .map((z) => ({
+        zone: `Zone ${z.zoneId}`,
+        ballLosses: z.ballLosses,
+      }))
+      .sort((a, b) => b.ballLosses - a.ballLosses);
+  }, [stats]);
+
+  const recoveriesZoneData = useMemo(() => {
+    if (!stats) return [];
+    return stats.zoneStats
+      .filter((z) => z.recoveries > 0)
+      .map((z) => ({
+        zone: `Zone ${z.zoneId}`,
+        recoveries: z.recoveries,
+      }))
+      .sort((a, b) => b.recoveries - a.recoveries);
   }, [stats]);
 
   const shotOutcomeData = useMemo(() => {
@@ -186,6 +208,8 @@ export function ChartsPanel() {
     conceded: t('shotsAgainstTab'),
     outcomes: t('shotOutcomes'),
     'zone-dist': t('zoneDist'),
+    'ball-losses': t('ballLosses'),
+    recoveries: t('recoveries'),
   };
 
   const handleExportChartPng = async () => {
@@ -220,12 +244,14 @@ export function ChartsPanel() {
 
   const hasShots = stats.totalShots > 0;
   const hasConceded = stats.totalConceded > 0;
+  const hasBallLosses = stats.totalBallLosses > 0;
+  const hasRecoveries = stats.totalRecoveries > 0;
 
   return (
     <Card className="mt-4">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle>{t('shotAnalysis')}</CardTitle>
+          <CardTitle>{t('analysis')}</CardTitle>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleExportCSV}>
               <Download className="h-4 w-4 mr-2" />
@@ -299,13 +325,13 @@ export function ChartsPanel() {
                   <h4 style={{ textAlign: 'center', marginBottom: 8, fontSize: 14 }}>
                     {t('shotsFor')}
                   </h4>
-                  <PieChart width={280} height={200}>
+                  <PieChart width={280} height={250} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                     <Pie
                       data={shotOutcomeData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={50}
-                      outerRadius={75}
+                      innerRadius={40}
+                      outerRadius={65}
                       dataKey="value"
                       label={({ name, percent = 0 }) =>
                         `${name} (${(percent * 100).toFixed(0)}%)`
@@ -327,13 +353,13 @@ export function ChartsPanel() {
                   <h4 style={{ textAlign: 'center', marginBottom: 8, fontSize: 14 }}>
                     {t('shotsAgainstTab')}
                   </h4>
-                  <PieChart width={280} height={200}>
+                  <PieChart width={280} height={250} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                     <Pie
                       data={concededOutcomeData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={50}
-                      outerRadius={75}
+                      innerRadius={40}
+                      outerRadius={65}
                       dataKey="value"
                       label={({ name, percent = 0 }) =>
                         `${name} (${(percent * 100).toFixed(0)}%)`
@@ -366,16 +392,48 @@ export function ChartsPanel() {
               <Tooltip />
               <Bar dataKey="shots" fill={SHOT_FOR_COLOR} name={t('shotsFor')} />
               <Bar dataKey="conceded" fill={SHOT_AGAINST_COLOR} name={t('shotsAgainstTab')} />
+              <Bar dataKey="ballLosses" fill="#f59e0b" name={t('ballLosses')} />
+              <Bar dataKey="recoveries" fill="#3b82f6" name={t('recoveries')} />
+            </BarChart>
+          )}
+          {activeTab === 'ball-losses' && hasBallLosses && (
+            <BarChart
+              width={EXPORT_WIDTH - 48}
+              height={300}
+              data={ballLossesZoneData}
+              margin={{ left: 20, right: 20 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="ballLosses" fill="#f59e0b" name={t('ballLosses')} />
+            </BarChart>
+          )}
+          {activeTab === 'recoveries' && hasRecoveries && (
+            <BarChart
+              width={EXPORT_WIDTH - 48}
+              height={300}
+              data={recoveriesZoneData}
+              margin={{ left: 20, right: 20 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="recoveries" fill="#3b82f6" name={t('recoveries')} />
             </BarChart>
           )}
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ChartTab)} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="shots">{t('shotsFor')}</TabsTrigger>
-            <TabsTrigger value="conceded">{t('shotsAgainstTab')}</TabsTrigger>
-            <TabsTrigger value="outcomes">{t('shotOutcomes')}</TabsTrigger>
-            <TabsTrigger value="zone-dist">{t('zoneDist')}</TabsTrigger>
+          <TabsList className="flex flex-wrap w-full h-auto">
+            <TabsTrigger value="shots" className="flex-1 min-w-[100px]">{t('shotsFor')}</TabsTrigger>
+            <TabsTrigger value="conceded" className="flex-1 min-w-[100px]">{t('shotsAgainstTab')}</TabsTrigger>
+            <TabsTrigger value="outcomes" className="flex-1 min-w-[100px]">{t('shotOutcomes')}</TabsTrigger>
+            <TabsTrigger value="zone-dist" className="flex-1 min-w-[100px]">{t('zoneDist')}</TabsTrigger>
+            <TabsTrigger value="ball-losses" className="flex-1 min-w-[100px]">{t('ballLosses')}</TabsTrigger>
+            <TabsTrigger value="recoveries" className="flex-1 min-w-[100px]">{t('recoveries')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="shots" className="mt-4">
@@ -419,14 +477,14 @@ export function ChartsPanel() {
               <div>
                 <h4 className="text-sm font-medium mb-2 text-center">{t('shotsFor')}</h4>
                 {shotOutcomeData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                       <Pie
                         data={shotOutcomeData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={50}
-                        outerRadius={75}
+                        innerRadius={40}
+                        outerRadius={65}
                         dataKey="value"
                         label={({ name, percent = 0 }) =>
                           `${name} (${(percent * 100).toFixed(0)}%)`
@@ -443,7 +501,7 @@ export function ChartsPanel() {
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                  <div className="h-[250px] flex items-center justify-center text-muted-foreground">
                     {t('noShots')}
                   </div>
                 )}
@@ -451,14 +509,14 @@ export function ChartsPanel() {
               <div>
                 <h4 className="text-sm font-medium mb-2 text-center">{t('shotsAgainstTab')}</h4>
                 {concededOutcomeData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                       <Pie
                         data={concededOutcomeData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={50}
-                        outerRadius={75}
+                        innerRadius={40}
+                        outerRadius={65}
                         dataKey="value"
                         label={({ name, percent = 0 }) =>
                           `${name} (${(percent * 100).toFixed(0)}%)`
@@ -475,7 +533,7 @@ export function ChartsPanel() {
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                  <div className="h-[250px] flex items-center justify-center text-muted-foreground">
                     {t('noShotsAgainst')}
                   </div>
                 )}
@@ -492,8 +550,46 @@ export function ChartsPanel() {
                 <Tooltip />
                 <Bar dataKey="shots" fill={SHOT_FOR_COLOR} name={t('shotsFor')} />
                 <Bar dataKey="conceded" fill={SHOT_AGAINST_COLOR} name={t('shotsAgainstTab')} />
+                <Bar dataKey="ballLosses" fill="#f59e0b" name={t('ballLosses')} />
+                <Bar dataKey="recoveries" fill="#3b82f6" name={t('recoveries')} />
               </BarChart>
             </ResponsiveContainer>
+          </TabsContent>
+
+          <TabsContent value="ball-losses" className="mt-4">
+            {hasBallLosses ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={ballLossesZoneData} margin={{ left: 20, right: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="ballLosses" fill="#f59e0b" name={t('ballLosses')} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                {t('noBallLossesRecorded')}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="recoveries" className="mt-4">
+            {hasRecoveries ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={recoveriesZoneData} margin={{ left: 20, right: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="recoveries" fill="#3b82f6" name={t('recoveries')} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                {t('noRecoveriesRecorded')}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </CardContent>
