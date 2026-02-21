@@ -39,13 +39,15 @@ const SHOT_AGAINST_COLOR = '#b847a3';
 const EXPORT_WIDTH = 800;
 const EXPORT_HEIGHT = 380;
 
-function HeatmapPitch({ data, total, dataKey, color }: { data: any[], total: number, dataKey: string, color: string }) {
+import { type ZoneStats } from '@/utils/stats';
+
+function HeatmapPitch({ data, total, dataKey, color }: { data: ZoneStats[], total: number, dataKey: keyof ZoneStats, color: string }) {
   return (
     <div className="flex justify-center mt-4 mb-4">
       <Pitch width={600} height={420} showZones={true} showZoneNumbers={false}>
         {ZONES.map((zone) => {
-          const zoneStat = data.find((d) => d.zoneId === zone.id || d.zone === `Zone ${zone.id}`);
-          const value = zoneStat ? zoneStat[dataKey] : 0;
+          const zoneStat = data.find((d) => d.zoneId === zone.id);
+          const value = zoneStat ? Number(zoneStat[dataKey]) : 0;
           const percentage = total > 0 ? (value / total) * 100 : 0;
           
           if (value === 0) return null;
@@ -384,32 +386,76 @@ export function ChartsPanel() {
             {chartTitleByTab[activeTab]}
           </h2>
           {activeTab === 'shots' && hasShots && (
-            <BarChart
-              width={EXPORT_WIDTH - 48}
-              height={300}
-              data={shotZoneData}
-              margin={{ left: 20, right: 20 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="shots" fill={SHOT_FOR_COLOR} name={t('shotsFor')} />
-            </BarChart>
+            viewType === 'chart' ? (
+              <BarChart
+                width={EXPORT_WIDTH - 48}
+                height={300}
+                data={shotZoneData}
+                margin={{ left: 20, right: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="shots" fill={SHOT_FOR_COLOR} name={t('shotsFor')} />
+              </BarChart>
+            ) : (
+              <HeatmapPitch data={stats.zoneStats} total={stats.totalShots} dataKey="shots" color={SHOT_FOR_COLOR} />
+            )
           )}
           {activeTab === 'conceded' && hasConceded && (
-            <BarChart
-              width={EXPORT_WIDTH - 48}
-              height={300}
-              data={concededZoneData}
-              margin={{ left: 20, right: 20 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="conceded" fill={SHOT_AGAINST_COLOR} name={t('shotsAgainstTab')} />
-            </BarChart>
+            viewType === 'chart' ? (
+              <BarChart
+                width={EXPORT_WIDTH - 48}
+                height={300}
+                data={concededZoneData}
+                margin={{ left: 20, right: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="conceded" fill={SHOT_AGAINST_COLOR} name={t('shotsAgainstTab')} />
+              </BarChart>
+            ) : (
+              <HeatmapPitch data={stats.zoneStats} total={stats.totalConceded} dataKey="conceded" color={SHOT_AGAINST_COLOR} />
+            )
+          )}
+          {activeTab === 'ball-losses' && hasBallLosses && (
+            viewType === 'chart' ? (
+              <BarChart
+                width={EXPORT_WIDTH - 48}
+                height={300}
+                data={ballLossesZoneData}
+                margin={{ left: 20, right: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="ballLosses" fill="#f59e0b" name={t('ballLosses')} />
+              </BarChart>
+            ) : (
+              <HeatmapPitch data={stats.zoneStats} total={stats.totalBallLosses} dataKey="ballLosses" color="#f59e0b" />
+            )
+          )}
+          {activeTab === 'recoveries' && hasRecoveries && (
+            viewType === 'chart' ? (
+              <BarChart
+                width={EXPORT_WIDTH - 48}
+                height={300}
+                data={recoveriesZoneData}
+                margin={{ left: 20, right: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="recoveries" fill="#3b82f6" name={t('recoveries')} />
+              </BarChart>
+            ) : (
+              <HeatmapPitch data={stats.zoneStats} total={stats.totalRecoveries} dataKey="recoveries" color="#3b82f6" />
+            )
           )}
           {activeTab === 'outcomes' && (
             <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -472,50 +518,28 @@ export function ChartsPanel() {
             </div>
           )}
           {activeTab === 'zone-dist' && (
-            <BarChart
-              width={EXPORT_WIDTH - 48}
-              height={300}
-              data={stats.zoneStats}
-              layout="vertical"
-              margin={{ left: 20 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis dataKey="zoneId" type="category" width={70} tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Bar dataKey="shots" fill={SHOT_FOR_COLOR} name={t('shotsFor')} />
-              <Bar dataKey="conceded" fill={SHOT_AGAINST_COLOR} name={t('shotsAgainstTab')} />
-              <Bar dataKey="ballLosses" fill="#f59e0b" name={t('ballLosses')} />
-              <Bar dataKey="recoveries" fill="#3b82f6" name={t('recoveries')} />
-            </BarChart>
-          )}
-          {activeTab === 'ball-losses' && hasBallLosses && (
-            <BarChart
-              width={EXPORT_WIDTH - 48}
-              height={300}
-              data={ballLossesZoneData}
-              margin={{ left: 20, right: 20 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="ballLosses" fill="#f59e0b" name={t('ballLosses')} />
-            </BarChart>
-          )}
-          {activeTab === 'recoveries' && hasRecoveries && (
-            <BarChart
-              width={EXPORT_WIDTH - 48}
-              height={300}
-              data={recoveriesZoneData}
-              margin={{ left: 20, right: 20 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="zone" tick={{ fontSize: 12 }} />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="recoveries" fill="#3b82f6" name={t('recoveries')} />
-            </BarChart>
+            viewType === 'chart' ? (
+              <BarChart
+                width={EXPORT_WIDTH - 48}
+                height={300}
+                data={stats.zoneStats}
+                layout="vertical"
+                margin={{ left: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis dataKey="zoneId" type="category" width={70} tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Bar dataKey="shots" fill={SHOT_FOR_COLOR} name={t('shotsFor')} />
+                <Bar dataKey="conceded" fill={SHOT_AGAINST_COLOR} name={t('shotsAgainstTab')} />
+                <Bar dataKey="ballLosses" fill="#f59e0b" name={t('ballLosses')} />
+                <Bar dataKey="recoveries" fill="#3b82f6" name={t('recoveries')} />
+              </BarChart>
+            ) : (
+              <div style={{ textAlign: 'center', marginTop: 40, color: '#6b7280' }}>
+                {t('pitchViewNotAvailable')}
+              </div>
+            )
           )}
         </div>
 
@@ -523,10 +547,10 @@ export function ChartsPanel() {
           <TabsList className="flex flex-wrap w-full h-auto">
             <TabsTrigger value="shots" className="flex-1 min-w-[100px]">{t('shotsFor')}</TabsTrigger>
             <TabsTrigger value="conceded" className="flex-1 min-w-[100px]">{t('shotsAgainstTab')}</TabsTrigger>
-            <TabsTrigger value="outcomes" className="flex-1 min-w-[100px]">{t('shotOutcomes')}</TabsTrigger>
-            <TabsTrigger value="zone-dist" className="flex-1 min-w-[100px]">{t('zoneDist')}</TabsTrigger>
             <TabsTrigger value="ball-losses" className="flex-1 min-w-[100px]">{t('ballLosses')}</TabsTrigger>
             <TabsTrigger value="recoveries" className="flex-1 min-w-[100px]">{t('recoveries')}</TabsTrigger>
+            <TabsTrigger value="outcomes" className="flex-1 min-w-[100px]">{t('shotOutcomes')}</TabsTrigger>
+            <TabsTrigger value="zone-dist" className="flex-1 min-w-[100px]">{t('zoneDist')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="shots" className="mt-4">
@@ -643,18 +667,24 @@ export function ChartsPanel() {
           </TabsContent>
 
           <TabsContent value="zone-dist" className="mt-4">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={stats.zoneStats} layout="vertical" margin={{ left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis dataKey="zoneId" type="category" width={70} tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Bar dataKey="shots" fill={SHOT_FOR_COLOR} name={t('shotsFor')} />
-                <Bar dataKey="conceded" fill={SHOT_AGAINST_COLOR} name={t('shotsAgainstTab')} />
-                <Bar dataKey="ballLosses" fill="#f59e0b" name={t('ballLosses')} />
-                <Bar dataKey="recoveries" fill="#3b82f6" name={t('recoveries')} />
-              </BarChart>
-            </ResponsiveContainer>
+            {viewType === 'chart' ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={stats.zoneStats} layout="vertical" margin={{ left: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="zoneId" type="category" width={70} tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Bar dataKey="shots" fill={SHOT_FOR_COLOR} name={t('shotsFor')} />
+                  <Bar dataKey="conceded" fill={SHOT_AGAINST_COLOR} name={t('shotsAgainstTab')} />
+                  <Bar dataKey="ballLosses" fill="#f59e0b" name={t('ballLosses')} />
+                  <Bar dataKey="recoveries" fill="#3b82f6" name={t('recoveries')} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground text-center px-4">
+                {t('pitchViewNotAvailable')}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="ball-losses" className="mt-4">

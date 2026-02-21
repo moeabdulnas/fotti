@@ -340,6 +340,8 @@ function MatchEditor() {
           </Pitch>
         </div>
 
+        <ChartsPanel />
+
         {stats && (
           <StatsTable
             zoneStats={stats.zoneStats}
@@ -349,8 +351,6 @@ function MatchEditor() {
             totalConcededGoals={stats.totalConcededGoals}
           />
         )}
-
-        <ChartsPanel />
 
         {pendingPosition && (eventMode === 'shot' || eventMode === 'conceded') && (
           <OutcomeSelector onSelect={handleOutcomeSelect} onCancel={handleCancel} />
