@@ -20,10 +20,10 @@ interface MatchContextType {
   updateHomeScore: (score: number) => void;
   updateAwayScore: (score: number) => void;
   updateDate: (date: string) => void;
-  addShot: (x: number, y: number, outcome: ShotOutcome) => void;
-  addConceded: (x: number, y: number, outcome: ShotOutcome) => void;
-  addBallLoss: (x: number, y: number) => void;
-  addRecovery: (x: number, y: number) => void;
+  addShot: (x: number, y: number, outcome: ShotOutcome, half?: 1 | 2) => void;
+  addConceded: (x: number, y: number, outcome: ShotOutcome, half?: 1 | 2) => void;
+  addBallLoss: (x: number, y: number, half?: 1 | 2) => void;
+  addRecovery: (x: number, y: number, half?: 1 | 2) => void;
   removeEvent: (id: string) => void;
   undoLastEvent: () => void;
   clearMatch: () => void;
@@ -118,7 +118,7 @@ export function MatchProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const addShot = useCallback((x: number, y: number, outcome: ShotOutcome) => {
+  const addShot = useCallback((x: number, y: number, outcome: ShotOutcome, half?: 1 | 2) => {
     setCurrentMatch((prev) => {
       if (!prev) return prev;
       const shot: ShotEvent = {
@@ -128,13 +128,14 @@ export function MatchProvider({ children }: { children: ReactNode }) {
         zone: getZoneForPosition(x, y),
         outcome,
         minute: getNextMinute(prev.events),
+        half,
         timestamp: Date.now(),
       };
       return { ...prev, events: [...prev.events, shot] };
     });
   }, []);
 
-  const addConceded = useCallback((x: number, y: number, outcome: ShotOutcome) => {
+  const addConceded = useCallback((x: number, y: number, outcome: ShotOutcome, half?: 1 | 2) => {
     setCurrentMatch((prev) => {
       if (!prev) return prev;
       const conceded: ConcededEvent = {
@@ -144,13 +145,14 @@ export function MatchProvider({ children }: { children: ReactNode }) {
         zone: getZoneForPosition(x, y),
         outcome,
         minute: getNextMinute(prev.events),
+        half,
         timestamp: Date.now(),
       };
       return { ...prev, events: [...prev.events, conceded] };
     });
   }, []);
 
-  const addBallLoss = useCallback((x: number, y: number) => {
+  const addBallLoss = useCallback((x: number, y: number, half?: 1 | 2) => {
     setCurrentMatch((prev) => {
       if (!prev) return prev;
       const loss: BallLossEvent = {
@@ -159,13 +161,14 @@ export function MatchProvider({ children }: { children: ReactNode }) {
         position: { x, y },
         zone: getZoneForPosition(x, y),
         minute: getNextMinute(prev.events),
+        half,
         timestamp: Date.now(),
       };
       return { ...prev, events: [...prev.events, loss] };
     });
   }, []);
 
-  const addRecovery = useCallback((x: number, y: number) => {
+  const addRecovery = useCallback((x: number, y: number, half?: 1 | 2) => {
     setCurrentMatch((prev) => {
       if (!prev) return prev;
       const recovery: RecoveryEvent = {
@@ -174,6 +177,7 @@ export function MatchProvider({ children }: { children: ReactNode }) {
         position: { x, y },
         zone: getZoneForPosition(x, y),
         minute: getNextMinute(prev.events),
+        half,
         timestamp: Date.now(),
       };
       return { ...prev, events: [...prev.events, recovery] };
@@ -192,7 +196,7 @@ export function MatchProvider({ children }: { children: ReactNode }) {
       if (!prev) return prev;
       return {
         ...prev,
-        events: prev.events.map((e) => (e.id === id ? { ...e, ...updates } as MatchEvent : e)),
+        events: prev.events.map((e) => (e.id === id ? ({ ...e, ...updates } as MatchEvent) : e)),
       };
     });
   }, []);
@@ -239,7 +243,7 @@ export function MatchProvider({ children }: { children: ReactNode }) {
     if (!match.date || typeof match.date !== 'string') {
       return { success: false, error: 'Missing or invalid date' };
     }
-    
+
     // We extract home and away team objects. We verify they exist, are objects,
     // and specifically contain an id and name. If a team is malformed, we throw an error.
     const homeTeam = match.homeTeam as Record<string, unknown> | undefined;
@@ -250,7 +254,7 @@ export function MatchProvider({ children }: { children: ReactNode }) {
     if (!awayTeam || typeof awayTeam !== 'object' || !awayTeam.id || !awayTeam.name) {
       return { success: false, error: 'Missing or invalid awayTeam' };
     }
-    
+
     // We enforce that the events array exists, even if it is empty.
     if (!Array.isArray(match.events)) {
       return { success: false, error: 'Missing or invalid events' };
@@ -262,19 +266,19 @@ export function MatchProvider({ children }: { children: ReactNode }) {
       if (!event || typeof event !== 'object') {
         return { success: false, error: 'Invalid event format' };
       }
-      
+
       const e = event as Record<string, unknown>;
-      
+
       // Every single match event MUST have these base positional and chronological properties
       if (!e.id || !e.type || !e.position || !e.zone || !e.minute || !e.timestamp) {
         return { success: false, error: 'Invalid event properties' };
       }
-      
+
       // Strict allowlist for event types. If a random string exists, reject the payload
       if (!['shot', 'conceded', 'ball_loss', 'recovery'].includes(e.type as string)) {
         return { success: false, error: 'Invalid event type' };
       }
-      
+
       // Specifically for 'shot' and 'conceded' events, an outcome (e.g., 'goal', 'off_target')
       // is mandatory. If one is missing, reject the payload.
       if ((e.type === 'shot' || e.type === 'conceded') && !e.outcome) {

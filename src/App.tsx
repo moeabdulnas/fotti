@@ -27,7 +27,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './components/ui/select';
 import { Plus, Download, Upload, Globe } from 'lucide-react';
+
+export type HalfFilter = 'full' | 1 | 2;
 
 function LanguageToggle() {
   const { language, setLanguage } = useLanguage();
@@ -72,6 +81,7 @@ function MatchEditor() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [fileInputRef, setFileInputRef] = useState<HTMLInputElement | null>(null);
+  const [halfFilter, setHalfFilter] = useState<HalfFilter>('full');
   const pitchRef = useRef<SVGSVGElement>(null);
 
   const stats = useMemo(() => {
@@ -79,22 +89,38 @@ function MatchEditor() {
     return calculateStats(currentMatch);
   }, [currentMatch]);
 
+  const filteredEvents = useMemo(() => {
+    if (!currentMatch) return [];
+    if (halfFilter === 'full') return currentMatch.events;
+    return currentMatch.events.filter((e) => e.half === halfFilter);
+  }, [currentMatch, halfFilter]);
+
+  const hasFirstHalf = useMemo(() => {
+    return currentMatch?.events.some((e) => e.half === 1) ?? false;
+  }, [currentMatch]);
+
+  const hasSecondHalf = useMemo(() => {
+    return currentMatch?.events.some((e) => e.half === 2) ?? false;
+  }, [currentMatch]);
+
   const handlePitchClick = (x: number, y: number) => {
+    const half = halfFilter === 'full' ? undefined : halfFilter;
     if (eventMode === 'shot' || eventMode === 'conceded') {
       setPendingPosition({ x, y });
     } else if (eventMode === 'ball_loss') {
-      addBallLoss(x, y);
+      addBallLoss(x, y, half);
     } else if (eventMode === 'recovery') {
-      addRecovery(x, y);
+      addRecovery(x, y, half);
     }
   };
 
   const handleOutcomeSelect = (outcome: ShotOutcome) => {
+    const half = halfFilter === 'full' ? undefined : halfFilter;
     if (pendingPosition) {
       if (eventMode === 'shot') {
-        addShot(pendingPosition.x, pendingPosition.y, outcome);
+        addShot(pendingPosition.x, pendingPosition.y, outcome, half);
       } else if (eventMode === 'conceded') {
-        addConceded(pendingPosition.x, pendingPosition.y, outcome);
+        addConceded(pendingPosition.x, pendingPosition.y, outcome, half);
       }
       setPendingPosition(null);
     }
@@ -104,12 +130,49 @@ function MatchEditor() {
     setPendingPosition(null);
   };
 
-  const handleExportPng = () => {
-    if (pitchRef.current && currentMatch) {
-      const filename = `${currentMatch.homeTeam.name}-vs-${currentMatch.awayTeam.name}`
-        .replace(/\s+/g, '-')
-        .toLowerCase();
-      exportToPng(pitchRef.current, `${filename}.png`);
+  const getTitle = (half: HalfFilter) => {
+    const teams = `${currentMatch!.homeTeam.name} ${t('vs')} ${currentMatch!.awayTeam.name}`;
+    if (half === 'full') return `${teams} - ${t('fullMatch')}`;
+    if (half === 1) return `${teams} - ${t('firstHalf')}`;
+    return `${teams} - ${t('secondHalf')}`;
+  };
+
+  const exportSinglePng = async (half: HalfFilter) => {
+    if (!pitchRef.current || !currentMatch) return;
+
+    const eventsToShow =
+      half === 'full' ? currentMatch.events : currentMatch.events.filter((e) => e.half === half);
+
+    const eventMarkers = pitchRef.current.querySelectorAll('[data-event-id]');
+    eventMarkers.forEach((el) => {
+      const id = el.getAttribute('data-event-id');
+      const shouldShow = id && eventsToShow.some((e) => e.id === id);
+      (el as HTMLElement).style.display = shouldShow ? '' : 'none';
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const filename = `${currentMatch.homeTeam.name}-vs-${currentMatch.awayTeam.name}`
+      .replace(/\s+/g, '-')
+      .toLowerCase();
+    const suffix = half === 'full' ? '-full' : half === 1 ? '-first-half' : '-second-half';
+
+    await exportToPng(pitchRef.current, `${filename}${suffix}.png`, getTitle(half));
+
+    eventMarkers.forEach((el) => {
+      (el as HTMLElement).style.display = '';
+    });
+  };
+
+  const handleExportPng = async () => {
+    if (!currentMatch) return;
+
+    if (hasFirstHalf && hasSecondHalf) {
+      await exportSinglePng(1);
+      await exportSinglePng(2);
+      await exportSinglePng('full');
+    } else {
+      await exportSinglePng(halfFilter);
     }
   };
 
@@ -237,7 +300,8 @@ function MatchEditor() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold">
-              {currentMatch.homeTeam.name} {currentMatch.homeScore ?? 0} - {currentMatch.awayScore ?? 0} {currentMatch.awayTeam.name}
+              {currentMatch.homeTeam.name} {currentMatch.homeScore ?? 0} -{' '}
+              {currentMatch.awayScore ?? 0} {currentMatch.awayTeam.name}
             </h1>
             <span className="text-sm text-muted-foreground">{currentMatch.date}</span>
           </div>
@@ -266,6 +330,19 @@ function MatchEditor() {
                   />
                   <Label htmlFor="show-zone-numbers">{t('zoneNumbers')}</Label>
                 </div>
+                <Select
+                  value={String(halfFilter)}
+                  onValueChange={(v) => setHalfFilter(v as HalfFilter)}
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder={t('half')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="full">{t('fullMatch')}</SelectItem>
+                    <SelectItem value="1">{t('firstHalf')}</SelectItem>
+                    <SelectItem value="2">{t('secondHalf')}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={handleExportPng}>
@@ -328,12 +405,12 @@ function MatchEditor() {
             showZoneNumbers={showZoneNumbers}
             onClick={handlePitchClick}
           >
-            {currentMatch.events.map((event: MatchEvent) => (
-              <EventMarker 
-                key={event.id} 
-                event={event} 
-                width={800} 
-                height={520} 
+            {filteredEvents.map((event: MatchEvent) => (
+              <EventMarker
+                key={event.id}
+                event={event}
+                width={800}
+                height={520}
                 onClick={(e) => setEditingEvent(e)}
               />
             ))}

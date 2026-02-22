@@ -64,6 +64,7 @@ export function EventMarker({ event, width, height, onClick }: EventMarkerProps)
         stroke="white"
         strokeWidth={2}
         style={{ cursor: 'pointer' }}
+        data-event-id={event.id}
         onClick={(e) => {
           e.stopPropagation();
           onClick?.(event);
@@ -83,6 +84,7 @@ export function EventMarker({ event, width, height, onClick }: EventMarkerProps)
         stroke="white"
         strokeWidth={2}
         style={{ cursor: 'pointer' }}
+        data-event-id={event.id}
         onClick={(e) => {
           e.stopPropagation();
           onClick?.(event);
@@ -102,6 +104,7 @@ export function EventMarker({ event, width, height, onClick }: EventMarkerProps)
       stroke="white"
       strokeWidth={2}
       style={{ cursor: 'pointer' }}
+      data-event-id={event.id}
       onClick={(e) => {
         e.stopPropagation();
         onClick?.(event);

@@ -25,7 +25,8 @@ export const translations = {
     exportChartPng: 'Exportera diagram PNG',
     pitchView: 'Planvy',
     chartView: 'Diagramvy',
-    pitchViewNotAvailable: 'Planvy är inte tillgänglig för blandad zonfördelning. Vänligen använd de individuella flikarna.',
+    pitchViewNotAvailable:
+      'Planvy är inte tillgänglig för blandad zonfördelning. Vänligen använd de individuella flikarna.',
     shotsFor: 'Skott för',
     shotsAgainstTab: 'Skott mot',
     shotOutcomes: 'Skottutfall',
@@ -59,6 +60,11 @@ export const translations = {
     score: 'Mål',
     save: 'Spara',
     fullMatch: 'Hela Matchen',
+    half: 'Halvlek',
+    exportAll: 'Exportera alla (3 PNG)',
+    exportFirstHalf: 'Exportera 1:a Halvlek',
+    exportSecondHalf: 'Exportera 2:a Halvlek',
+    exportFullMatch: 'Exportera Hela Matchen',
   },
   en: {
     appName: 'Fotti',
@@ -86,7 +92,8 @@ export const translations = {
     exportChartPng: 'Export Chart PNG',
     pitchView: 'Pitch View',
     chartView: 'Chart View',
-    pitchViewNotAvailable: 'Pitch view is not available for mixed zone distribution. Please use the individual tabs.',
+    pitchViewNotAvailable:
+      'Pitch view is not available for mixed zone distribution. Please use the individual tabs.',
     shotsFor: 'Shots For',
     shotsAgainstTab: 'Shots Against',
     shotOutcomes: 'Shot Outcomes',
@@ -120,6 +127,11 @@ export const translations = {
     score: 'Goals',
     save: 'Save',
     fullMatch: 'Full Match',
+    half: 'Half',
+    exportAll: 'Export all (3 PNG)',
+    exportFirstHalf: 'Export 1st Half',
+    exportSecondHalf: 'Export 2nd Half',
+    exportFullMatch: 'Export Full Match',
   },
 } as const;
 
