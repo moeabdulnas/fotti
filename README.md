@@ -1,4 +1,4 @@
-# Fotti
+# Fotti - A football pitch stats canvas
 
 A React web application built with Vite, TypeScript, and Tailwind CSS.
 
